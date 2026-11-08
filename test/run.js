@@ -31,6 +31,7 @@ const book = (key, title, mul, markets) => ({
 });
 
 let calls = [];
+let throttleOnce = true;
 const mock = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   calls.push(u.pathname + u.search);
@@ -41,6 +42,7 @@ const mock = http.createServer((req, res) => {
   assert.ok(!/\.\d{3}Z/.test(u.search), 'datas sem milissegundos');
   if (u.pathname === '/sports') return res.end(JSON.stringify(sports));
   let m = u.pathname.match(/^\/sports\/([a-z_]+)\/events$/);
+  if (m && m[1] === 'soccer_epl' && throttleOnce) { throttleOnce = false; res.statusCode = 429; return res.end(JSON.stringify({ message: 'Too many requests' })); }
   if (m) return res.end(JSON.stringify(events[m[1]] || []));
   m = u.pathname.match(/^\/sports\/([a-z_]+)\/odds$/);
   if (m) {
@@ -67,11 +69,14 @@ const call = async (name, qs) => {
 };
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon' }).format(new Date());
 
-// eventos: só ligas em destaque, ordenados, só futebol sem outrights
+// eventos: só ligas em destaque, só futebol sem outrights, com um 429 a meio que deve ser repetido
+calls = [];
 let r = await call('events', `date=${today}`);
 assert.equal(r.status, 200, JSON.stringify(r.json));
 const idsToday = r.json.fixtures.map((f) => f.id);
 // Perto da meia-noite os jogos "daqui a 2-3 h" podem cair no dia seguinte; o teste aceita isso.
+assert.equal(throttleOnce, false, 'o 429 aconteceu');
+assert.ok(calls.filter((c) => c.includes('soccer_epl/events')).length === 2, 'repetiu depois do 429');
 assert.ok(idsToday.every((id) => ['e1', 'e2', 'e3'].includes(id)), 'sem ligas fora do destaque');
 assert.match(r.headers['cache-control'], /s-maxage=1800/);
 r = await call('events', `date=${today}&all=1`);

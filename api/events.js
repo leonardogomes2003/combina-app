@@ -11,7 +11,8 @@ export default handler(async (q) => {
 
   const fixtures = [];
   if (!empty) {
-    await pool(chosen, 6, async (l) => {
+    // Poucos pedidos em simultâneo: a The Odds API trava rajadas.
+    await pool(chosen, 2, async (l) => {
       try {
         const { data } = await oa(`sports/${l.key}/events`, { commenceTimeFrom: from, commenceTimeTo: to, dateFormat: 'iso' });
         for (const e of data || []) {
