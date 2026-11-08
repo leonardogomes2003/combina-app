@@ -1,0 +1,10 @@
+{
+  "name": "combina-app",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "node dev.js",
+    "test": "node test/run.js"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Combina",
+  "short_name": "Combina",
+  "description": "Gera multis de futebol com as ligas, os mercados e as odds que escolhes.",
+  "lang": "pt-PT",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f6fd",
+  "theme_color": "#0a2a86",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
