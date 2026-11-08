@@ -211,6 +211,7 @@ nav.tabs button[aria-current="page"]{background:var(--sky);color:var(--blue)}
 .tile:has(input:checked)::after{content:"";position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
 .tile:has(input:focus-visible){outline:2.5px solid var(--blue);outline-offset:2px}
 .tile:has(input:disabled){opacity:.4;cursor:default}
+.tile small{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:4px}
 .sf{padding:12px max(18px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
 .sf .meta{font-size:13px;color:var(--muted);font-weight:600;flex:1}
 .sf .go{flex:none;padding:14px 26px;box-shadow:none;background:var(--blue)}
@@ -253,17 +254,20 @@ const TZ='Europe/Lisbon';
 const ymd=d=>new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(d);
 const hhmm=ts=>new Date(ts*1000).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',timeZone:TZ});
 
-/* ---------- ligas em destaque (ids da API-Football) ---------- */
+/* ---------- ligas em destaque (chaves da The Odds API) ---------- */
 const CURATED=[
- [94,'Portugal','POR','Primeira Liga'],[95,'Portugal','POR','Segunda Liga'],[96,'Portugal','POR','Taça de Portugal'],
- [2,'Europa','UEFA','Liga dos Campeões'],[3,'Europa','UEFA','Liga Europa'],[848,'Europa','UEFA','Liga Conferência'],
- [39,'Inglaterra','ENG','Premier League'],[45,'Inglaterra','ENG','FA Cup'],[140,'Espanha','ESP','La Liga'],
- [135,'Itália','ITA','Serie A'],[78,'Alemanha','GER','Bundesliga'],[79,'Alemanha','GER','2. Bundesliga'],
- [61,'França','FRA','Ligue 1'],[88,'Países Baixos','NED','Eredivisie'],[144,'Bélgica','BEL','Jupiler Pro League'],
- [203,'Turquia','TUR','Süper Lig'],[119,'Dinamarca','DEN','Superliga'],[113,'Suécia','SWE','Allsvenskan'],
- [207,'Suíça','SUI','Super League'],[218,'Áustria','AUT','Bundesliga'],[103,'Noruega','NOR','Eliteserien'],
- [179,'Escócia','SCO','Premiership'],[73,'Brasil','BRA','Copa do Brasil']
+ ['soccer_portugal_primeira_liga','Portugal','POR','Primeira Liga'],
+ ['soccer_uefa_champs_league','Europa','UEFA','Liga dos Campeões'],['soccer_uefa_europa_league','Europa','UEFA','Liga Europa'],['soccer_uefa_europa_conference_league','Europa','UEFA','Liga Conferência'],
+ ['soccer_epl','Inglaterra','ENG','Premier League'],['soccer_fa_cup','Inglaterra','ENG','FA Cup'],['soccer_spain_la_liga','Espanha','ESP','La Liga'],
+ ['soccer_italy_serie_a','Itália','ITA','Serie A'],['soccer_germany_bundesliga','Alemanha','GER','Bundesliga'],['soccer_germany_bundesliga2','Alemanha','GER','2. Bundesliga'],
+ ['soccer_france_ligue_one','França','FRA','Ligue 1'],['soccer_netherlands_eredivisie','Países Baixos','NED','Eredivisie'],['soccer_belgium_first_div','Bélgica','BEL','Jupiler Pro League'],
+ ['soccer_turkey_super_league','Turquia','TUR','Süper Lig'],['soccer_denmark_superliga','Dinamarca','DEN','Superliga'],['soccer_sweden_allsvenskan','Suécia','SWE','Allsvenskan'],
+ ['soccer_switzerland_superleague','Suíça','SUI','Super League'],['soccer_austria_bundesliga','Áustria','AUT','Bundesliga'],['soccer_norway_eliteserien','Noruega','NOR','Eliteserien'],
+ ['soccer_spl','Escócia','SCO','Premiership'],['soccer_brazil_campeonato','Brasil','BRA','Brasileirão']
 ];
+// Mercados que a The Odds API dá no plano grátis (pedido por liga).
+const API_MARKETS=['ft','ou','hcp'];
+const apiSupports=mid=>API_MARKETS.includes(mid);
 const CUR=new Map(CURATED.map(([id,c,cc,n],i)=>[String(id),{c,cc,n,order:i}]));
 
 /* ---------- dados de exemplo (modo demonstração) ---------- */
@@ -346,7 +350,7 @@ const MARKETS=[
 const MK=Object.fromEntries(MARKETS.map(m=>[m.id,m]));
 const PREFIX={tgh:f=>f.home+': ',tga:f=>f.away+': ',soth:f=>f.home+': ',sota:f=>f.away+': ',cor:()=>'Cantos: ',sot:()=>'Remates à baliza: '};
 
-// Traduz um valor da API-Football ("Home", "Over 2.5", "Home/Draw", "Away -1.5"...) para português.
+// Traduz um valor da API ("Home", "Over 2.5", "Home/Draw", "Away -1.5"...) para português.
 function translate(mid,s,f){
   let v=s.v.trim();const team=t=>t==='Home'?f.home:t==='Away'?f.away:t;
   const simple={Home:f.home,Away:f.away,Draw:'Empate',Yes:'Sim',No:'Não','Home/Draw':`${f.home} ou Empate`,'Home/Away':`${f.home} ou ${f.away}`,'Draw/Away':`Empate ou ${f.away}`,'1':f.home,'X':'Empate','2':f.away};
@@ -371,7 +375,7 @@ const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()+i*864e5);const 
     long:i===0?'Hoje':i===1?'Amanhã':d.toLocaleDateString('pt-PT',{...o,weekday:'long',day:'numeric',month:'short'}).replace('.','')}});
 const PRESETS=[{n:'Seguras',min:1.1,max:1.5},{n:'Equilibradas',min:1.5,max:2.5},{n:'Arriscadas',min:2.5,max:10}];
 const S={tab:'gerar',source:'loading',notice:'',day:days[0].key,games:2,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
-  showAll:false,dayData:{},oddsState:{},mk:{},quota:null,
+  showAll:false,dayData:{},oddsState:{},oddsHave:{},mk:{},quota:null,
   saved:store.get('saved',[]),stake:store.get('stake',5),perRun:store.get('perRun',3)};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>Number(n).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -385,20 +389,28 @@ async function api(path){
   if(!r.ok||!j){const e=new Error(j?.error||'O servidor não respondeu.');e.code=j?.code||'no_server';throw e}
   return j;
 }
-async function ensureDay(date){
-  if(isDemo()||S.dayData[date]?.status==='ok'||S.dayData[date]?.status==='loading')return;
+async function ensureDay(date,force){
+  const d=S.dayData[date];
+  if(isDemo()||d?.status==='loading')return;
+  if(!force&&d?.status==='ok'&&(d.all||!S.showAll))return;
   S.dayData[date]={status:'loading'};render();
-  try{const j=await api(`/api/fixtures?date=${date}`);S.dayData[date]={status:'ok',fixtures:j.fixtures}}
+  const all=S.showAll;
+  try{const j=await api(`/api/events?date=${date}${all?'&all=1':''}`);S.dayData[date]={status:'ok',all,fixtures:j.fixtures}}
   catch(e){S.dayData[date]={status:'error',err:e.message}}
   render();
 }
-async function ensureOdds(date,leagueIds){
+// Pede só os mercados que ainda não estão carregados para cada liga (cada mercado gasta créditos).
+async function ensureOdds(date,leagueIds,mids=['ft']){
+  mids=[...new Set(mids.filter(apiSupports))].sort();if(!mids.length)return;
   for(const id of leagueIds){
-    const key=date+'|'+id;if(S.oddsState[key]==='ok')continue;
-    const lg=leaguesFor(date).find(l=>l.id===id);if(!lg)continue;
+    const key=date+'|'+id;const have=S.oddsHave[key]||new Set();
+    const need=mids.filter(m=>!have.has(m));if(!need.length)continue;
+    if(!leaguesFor(date).some(l=>l.id===id))continue;
     S.oddsState[key]='loading';
-    try{const j=await api(`/api/odds?date=${date}&league=${id}&season=${lg.season}`);
-      for(const f of j.fixtures)S.mk[f.id]=f.markets;S.oddsState[key]='ok'}
+    try{const j=await api(`/api/odds?date=${date}&league=${id}&markets=${need.join(',')}`);
+      for(const f of j.fixtures)S.mk[f.id]={...(S.mk[f.id]||{}),...f.markets};
+      need.forEach(m=>have.add(m));S.oddsHave[key]=have;S.oddsState[key]='ok';
+      if(j.quota&&j.quota.remaining!=null)S.quota={remaining:j.quota.remaining,used:j.quota.used,total:j.quota.remaining+(j.quota.used||0)}}
     catch(e){S.oddsState[key]='error';throw e}
   }
 }
@@ -452,12 +464,13 @@ async function generate(scroll=true){
   const sel=selectedLeagues();
   if(!sel.length){S.err='Escolhe pelo menos uma liga com jogos neste dia.';return render()}
   if(!S.types.length){S.err='Escolhe pelo menos um tipo de aposta.';return render()}
+  if(!isDemo()&&!S.types.some(apiSupports)){S.err='Com a API grátis só há odds de Resultado Final, Mais/Menos Golos e Handicap. Escolhe pelo menos um destes.';return render()}
   for(const mid of S.types){const r=rangeOf(mid);if(!(r.min>=1.01&&r.max>=r.min)){S.err=`O intervalo de odds de "${MK[mid].n}" não é válido.`;return render()}}
   let p=pool();
   if(p.length<S.games){S.err=`Só há ${p.length} ${p.length===1?'jogo':'jogos'} nas ligas escolhidas para ${dayLong(S.day).toLowerCase()}. Junta mais ligas ou baixa o número de jogos.`;return render()}
   if(!isDemo()){
     S.busy=true;render();
-    try{await ensureOdds(S.day,sel.map(l=>l.id))}
+    try{await ensureOdds(S.day,sel.map(l=>l.id),S.types)}
     catch(e){S.busy=false;S.err=`Não consegui carregar as odds: ${e.message}`;return render()}
     S.busy=false;
     p=p.filter(f=>S.mk[f.id]&&Object.keys(S.mk[f.id]).length);
@@ -538,13 +551,13 @@ function vInicio(){
   const fx=fixturesFor(S.day);
   return `${S.notice?`<div class="banner">${esc(S.notice)}</div>`:''}
   <section class="step"><div class="step-h"><h2>Escolhe o dia</h2></div>${calendar()}${dayProblem()}</section>
-  ${ls.length?ls.map(l=>{const st=S.oddsState[S.day+'|'+l.id];return`<div class="lg"><h3><span class="code">${esc(l.cc)}</span><span class="lgn">${esc(l.n)}</span>
+  ${ls.length?ls.map(l=>{const st=S.oddsHave[S.day+'|'+l.id]?.has('ft')?'ok':S.oddsState[S.day+'|'+l.id];return`<div class="lg"><h3><span class="code">${esc(l.cc)}</span><span class="lgn">${esc(l.n)}</span>
     ${isDemo()||st==='ok'?'':`<button class="ibtn sm" data-loadodds="${l.id}" ${st==='loading'?'disabled':''}>${st==='loading'?SPIN:''}${st==='error'?'Tentar de novo':'Ver odds'}</button>`}</h3>
     ${fx.filter(f=>f.lg.id===l.id).map(f=>{const s=selections(f,'ft');const o=k=>{const x=s.find(x=>x.pick===k)?.odd;return x?fmt(x):'–'};return`<div class="g"><time>${esc(f.time)}</time>
     <div class="tm"><div>${esc(f.home)}</div><div>${esc(f.away)}</div></div>
     <div class="x"><span><em>1</em>${o(f.home)}</span><span><em>X</em>${o('Empate')}</span><span><em>2</em>${o(f.away)}</span></div></div>`}).join('')}</div>`}).join('')
   :(S.dayData[S.day]?.status==='ok'||isDemo()?'<div class="empty"><strong>Sem jogos</strong>Não há jogos por começar nas ligas em destaque neste dia.</div>':'')}
-  ${!isDemo()&&S.dayData[S.day]?.status==='ok'&&leaguesFor(S.day).some(l=>!l.curated)?`<button class="add" data-act="toggleall">${S.showAll?'Mostrar só as ligas em destaque':'Mostrar todas as ligas'}</button>`:''}`;
+  ${!isDemo()&&S.dayData[S.day]?.status==='ok'?`<button class="add" data-act="toggleall">${S.showAll?'Mostrar só as ligas em destaque':'Mostrar todas as ligas'}</button>`:''}`;
 }
 function vMultis(){
   return S.saved.length?`<div class="tickets">${S.saved.map((m,i)=>ticket(m,i,true)).join('')}</div>`
@@ -553,9 +566,9 @@ function vMultis(){
 function vPerfil(){
   const q=S.quota;
   return `<div class="card">
-  <div class="row"><p>Origem dos dados<small>${isDemo()?'Dados de exemplo gerados por um modelo':'API-Football, com odds reais'}</small></p>
+  <div class="row"><p>Origem dos dados<small>${isDemo()?'Dados de exemplo gerados por um modelo':'The Odds API, com odds reais'}</small></p>
     ${S.apiOk?`<button class="ibtn" data-act="source">${isDemo()?'Usar API':'Usar exemplo'}</button>`:''}</div>
-  ${!isDemo()?`<div class="row"><p>Pedidos à API hoje<small>${q?(q.used!=null?`${q.used} de ${q.limit} · plano ${esc(q.plan||'')}`:'Sem informação'):S.quotaErr?esc(S.quotaErr):'A verificar…'}</small></p></div>`:''}
+  ${!isDemo()?`<div class="row"><p>Créditos da API este mês<small>${q?(q.remaining!=null?`Faltam ${q.remaining} de ${q.total}. Cada mercado pedido por liga gasta 1.`:'Sem informação'):S.quotaErr?esc(S.quotaErr):'A verificar…'}</small></p></div>`:''}
   <div class="row"><p>Multis por geração<small>Quantas opções aparecem de cada vez</small></p>
     <div class="mini"><button data-per="-1" aria-label="Menos" ${S.perRun<=1?'disabled':''}>−</button><output>${S.perRun}</output><button data-per="1" aria-label="Mais" ${S.perRun>=5?'disabled':''}>+</button></div></div>
   <div class="row"><p>Valor por defeito<small>Usado nas novas multis</small></p>
@@ -563,7 +576,7 @@ function vPerfil(){
   <div class="row"><p>Multis guardadas<small>${S.saved.length} neste dispositivo</small></p>
     ${S.confirmDel?`<span class="acts"><button class="ibtn" data-act="delno">Cancelar</button><button class="ibtn warn" data-act="delyes">Apagar</button></span>`
       :`<button class="ibtn warn" data-act="delask" ${S.saved.length?'':'disabled'}>Apagar todas</button>`}</div></div>
-  <p class="note">${isDemo()?'Os jogos e as odds são de exemplo. ':'Odds pré-jogo da API-Football; podem mudar até ao início do jogo. Confirma sempre na casa de apostas. '}18+ · Joga com responsabilidade.</p>`;
+  <p class="note">${isDemo()?'Os jogos e as odds são de exemplo. ':'Odds pré-jogo da The Odds API; podem mudar até ao início do jogo. Confirma sempre na casa de apostas. '}18+ · Joga com responsabilidade.</p>`;
 }
 const HEROES={
   gerar:()=>{const sel=selectedLeagues();return{t:'Monta a tua multi',p:'Escolhe o dia, as ligas e os mercados. Nós juntamos os jogos.',
@@ -603,7 +616,7 @@ function drawList(){
   const el=document.getElementById('sheet');if(!draft)return;const kind=el.dataset.kind,q=norm(document.getElementById('q')?.value||'');
   const list=document.getElementById('list');
   if(kind==='leagues'){
-    const all=leaguesFor(S.day);const hasOthers=all.some(l=>!l.curated);
+    const all=leaguesFor(S.day);const hasOthers=!isDemo();
     document.getElementById('quick').innerHTML=`<button data-q="all">Todas em destaque</button><button data-q="none">Limpar</button>${hasOthers?`<button data-q="toggle">${S.showAll?'Só em destaque':'Ver todas as ligas'}</button>`:''}`;
     const ls=all.filter(l=>(l.curated||S.showAll||draft.has(l.id))&&(!q||norm(l.n+' '+l.c).includes(q)));
     list.innerHTML=ls.length?ls.map(l=>{const on=draft.has(l.id);return`<label class="lrow"><span class="code">${esc(l.cc)}</span>
@@ -615,7 +628,7 @@ function drawList(){
   }else{
     const groups=[...new Set(MARKETS.map(m=>m.g))];
     list.innerHTML=groups.map(g=>{const ms=MARKETS.filter(m=>m.g===g&&(!q||norm(m.n).includes(q)));if(!ms.length)return'';
-      return`<p class="cat">${g}</p><div class="grid">${ms.map(m=>{const on=draft.includes(m.id);return`<label class="tile"><input type="checkbox" data-mk="${m.id}" ${on?'checked':''} ${!on&&draft.length>=6?'disabled':''}>${m.n}</label>`}).join('')}</div>`}).join('')||'<p class="hint">Nenhum mercado encontrado.</p>';
+      return`<p class="cat">${g}</p><div class="grid">${ms.map(m=>{const on=draft.includes(m.id);const na=!isDemo()&&!apiSupports(m.id);return`<label class="tile${na?' na':''}"><input type="checkbox" data-mk="${m.id}" ${on?'checked':''} ${(!on&&draft.length>=6)||(na&&!on)?'disabled':''}>${m.n}${na?'<small>Não incluído na API grátis</small>':''}</label>`}).join('')}</div>`}).join('')||'<p class="hint">Nenhum mercado encontrado.</p>';
     document.getElementById('sfmeta').textContent=`${draft.length} de 6 escolhidos`;
   }
 }
@@ -637,7 +650,7 @@ document.addEventListener('click',async e=>{
   if(d.q){
     if(d.q==='all')leaguesFor(S.day).forEach(l=>{if(l.curated)draft.add(l.id)});
     else if(d.q==='none')draft.clear();
-    else S.showAll=!S.showAll;
+    else{S.showAll=!S.showAll;ensureDay(S.day)}
     drawList();return}
   if('confirm' in d){
     if(document.getElementById('sheet').dataset.kind==='leagues')S.leagues=draft;
@@ -646,11 +659,11 @@ document.addEventListener('click',async e=>{
   if(d.unlg){S.leagues.delete(d.unlg);render();return}
   if(d.unmk){S.types=S.types.filter(x=>x!==d.unmk);delete S.ranges[d.unmk];render();return}
   if(d.preset){const[mid,pi]=d.preset.split(':');const p=PRESETS[+pi];S.ranges[mid]={min:p.min,max:p.max};render();return}
-  if(d.loadodds){const id=d.loadodds;S.oddsState[S.day+'|'+id]='loading';render();try{delete S.oddsState[S.day+'|'+id];await ensureOdds(S.day,[id])}catch(err){S.err=err.message}render();return}
-  if(d.act==='toggleall'){S.showAll=!S.showAll;render();return}
+  if(d.loadodds){const id=d.loadodds;const p=ensureOdds(S.day,[id],['ft']);render();try{await p}catch(err){S.err=err.message}render();return}
+  if(d.act==='toggleall'){S.showAll=!S.showAll;render();ensureDay(S.day);return}
   if(d.act==='gen'){generate();return}
   if(d.act==='clear'){S.games=2;S.leagues=new Set();S.types=[];S.ranges={};S.results=[];S.err='';render();if(S.day!==days[0].key)setDay(days[0].key);window.scrollTo({top:0,behavior:'smooth'});return}
-  if(d.act==='source'){S.source=isDemo()?'api':'demo';S.notice='';S.leagues=new Set();S.results=[];S.err='';render();ensureDay(S.day);if(!isDemo())loadQuota();return}
+  if(d.act==='source'){S.source=isDemo()?'api':'demo';if(!isDemo())S.types=S.types.filter(apiSupports);S.notice='';S.leagues=new Set();S.results=[];S.err='';render();ensureDay(S.day);if(!isDemo())loadQuota();return}
   if(d.act==='delask'){S.confirmDel=true;render();return}
   if(d.act==='delno'){S.confirmDel=false;render();return}
   if(d.act==='delyes'){S.saved=[];store.set('saved',[]);S.confirmDel=false;render();return}
@@ -688,18 +701,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElemen
 (async function start(){
   render();
   try{
-    const j=await api(`/api/fixtures?date=${S.day}`);
+    const j=await api(`/api/events?date=${S.day}`);
     S.source='api';S.apiOk=true;S.dayData[S.day]={status:'ok',fixtures:j.fixtures};
-    const want=['94','39','140'].filter(id=>leaguesFor(S.day).some(l=>l.id===id));
-    S.leagues=new Set(want);S.types=['ft','dc','ou'];S.ranges={ft:{min:1.5,max:2.5},dc:{min:1.1,max:1.5},ou:{min:1.5,max:2.5}};
+    const want=['soccer_portugal_primeira_liga','soccer_epl','soccer_spain_la_liga'].filter(id=>leaguesFor(S.day).some(l=>l.id===id));
+    S.leagues=new Set(want);S.types=['ft','ou'];S.ranges={ft:{min:1.5,max:2.5},ou:{min:1.5,max:2.5}};
     render();
   }catch(e){
-    if(e.code==='api_error'||e.code==='rate_limited'){
-      // O servidor está a funcionar mas a API-Football recusou: mostra o erro em vez de esconder.
+    if(e.code&&!['missing_key','no_server'].includes(e.code)){
+      // O servidor está a funcionar mas a API recusou: mostra o erro em vez de esconder.
       S.source='api';S.apiOk=true;S.dayData[S.day]={status:'error',err:e.message};render();return;
     }
     S.source='demo';S.apiOk=false;
-    S.notice=e.code==='missing_key'?'Falta configurar a chave da API-Football. Até lá, estás a ver dados de exemplo.':'Sem ligação ao servidor. Estás a ver dados de exemplo.';
+    S.notice=e.code==='missing_key'?'Falta configurar a chave da The Odds API. Até lá, estás a ver dados de exemplo.':'Sem ligação ao servidor. Estás a ver dados de exemplo.';
     S.leagues=new Set(['por1','epl','esp']);S.types=['ft','dc','ou'];S.ranges={ft:{min:1.5,max:2.5},dc:{min:1.1,max:1.5},ou:{min:1.5,max:2.5}};
     await generate(false);
   }
