@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#0a2a86">
 <meta name="description" content="Gera multis de futebol com as ligas, os mercados e as odds que escolhes.">
 <title>Combina</title>
@@ -97,6 +97,16 @@ button:disabled{cursor:default}
 .presets button{border:0;background:var(--sky);color:var(--blue);border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700}
 .presets button[aria-pressed="true"]{background:var(--blue);color:#fff}
 .hint{color:var(--muted);font-size:14px;margin:0}
+.hint b{color:var(--ink);font-weight:500}
+.switch{margin-left:auto;width:48px;height:28px;border-radius:999px;border:0;background:var(--sky-2);position:relative;padding:0;flex:none;transition:background .15s}
+.switch span{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--white);box-shadow:0 1px 3px rgba(11,27,58,.25);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--blue)}
+.switch[aria-checked="true"] span{transform:translateX(20px)}
+.target{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.tval{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:14px;padding:0 16px;font-weight:600;color:var(--muted);font-size:14px}
+.tval:focus-within{box-shadow:0 0 0 2px var(--blue)}
+.tval input{flex:1;width:0;min-width:0;border:0;background:transparent;padding:12px 0;font-family:var(--display);font-weight:800;font-size:30px;color:var(--blue);text-align:right}
+.tval input:focus{outline:none}
 
 /* barra de gerar */
 .genbar{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:15;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -374,7 +384,7 @@ const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()+i*864e5);const 
     dd:d.toLocaleDateString('pt-PT',{...o,day:'2-digit'}),
     long:i===0?'Hoje':i===1?'Amanhã':d.toLocaleDateString('pt-PT',{...o,weekday:'long',day:'numeric',month:'short'}).replace('.','')}});
 const PRESETS=[{n:'Seguras',min:1.1,max:1.5},{n:'Equilibradas',min:1.5,max:2.5},{n:'Arriscadas',min:2.5,max:10}];
-const S={tab:'gerar',source:'loading',notice:'',day:days[0].key,games:2,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
+const S={target:{on:false,value:3,tol:.1},tab:'gerar',source:'loading',notice:'',day:days[0].key,games:2,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
   showAll:false,dayData:{},oddsState:{},oddsHave:{},mk:{},quota:null,
   saved:store.get('saved',[]),stake:store.get('stake',5),perRun:store.get('perRun',3)};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -439,23 +449,74 @@ const selectedLeagues=()=>leaguesFor(S.day).filter(l=>S.leagues.has(l.id));
 
 /* ---------- geração ---------- */
 const rangeOf=mid=>S.ranges[mid]??{min:1.1,max:10};
-function buildMulti(pool,taken){
-  for(let attempt=0;attempt<40;attempt++){
-    const legs=[];
-    for(const f of shuffle(pool)){
-      if(legs.length>=S.games)break;
-      for(const mid of shuffle(S.types)){
-        const {min,max}=rangeOf(mid);
-        const c=selections(f,mid).filter(s=>s.odd>=min&&s.odd<=max);
-        if(c.length){const s=c[Math.floor(Math.random()*c.length)];
-          legs.push({fx:f.id,league:f.lg.n,country:f.lg.c,time:f.time,match:`${f.home} vs ${f.away}`,market:MK[mid].n,pick:s.pick,odd:s.odd,book:s.book});break}
-      }
+// Seleções possíveis de um jogo: todos os tipos escolhidos, dentro do intervalo de cada um.
+function candidates(f){
+  const out=[];
+  for(const mid of S.types){const {min,max}=rangeOf(mid);
+    for(const s of selections(f,mid))if(s.odd>=min&&s.odd<=max)out.push({...s,mid})}
+  return out;
+}
+const legOf=(f,s)=>({fx:f.id,league:f.lg.n,country:f.lg.c,time:f.time,match:`${f.home} vs ${f.away}`,market:MK[s.mid].n,pick:s.pick,odd:s.odd,book:s.book});
+function makeMulti(legs){
+  const sig=legs.map(l=>l.fx+l.pick).sort().join('|');
+  return{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),day:S.day,legs,total:legs.reduce((a,l)=>a*l.odd,1),stake:S.stake,sig};
+}
+const targetRange=()=>({lo:S.target.value*(1-S.target.tol),hi:S.target.value*(1+S.target.tol)});
+// Limites da odd total possível com estes jogos e intervalos.
+function oddBounds(cands){
+  const mins=cands.map(c=>Math.min(...c.sel.map(s=>s.odd))).sort((a,b)=>a-b);
+  const maxs=cands.map(c=>Math.max(...c.sel.map(s=>s.odd))).sort((a,b)=>b-a);
+  const prod=a=>a.slice(0,S.games).reduce((x,y)=>x*y,1);
+  return{min:prod(mins),max:prod(maxs)};
+}
+// Gera uma multi que ainda não esteja em `taken`. Com odd alvo, procura combinações dentro da margem.
+// Devolve {multi} ou {best} (a combinação mais próxima do alvo, para a mensagem de erro).
+function buildMulti(fixtures,taken){
+  const cands=shuffle(fixtures).map(f=>({f,sel:candidates(f)})).filter(c=>c.sel.length);
+  if(cands.length<S.games)return{};
+  if(!S.target.on){
+    for(let attempt=0;attempt<40;attempt++){
+      const legs=shuffle(cands).slice(0,S.games).map(c=>{
+        const mid=shuffle([...new Set(c.sel.map(s=>s.mid))])[0];const ss=c.sel.filter(s=>s.mid===mid);
+        return legOf(c.f,ss[Math.floor(Math.random()*ss.length)])});
+      const m=makeMulti(legs);if(!taken.has(m.sig)){taken.add(m.sig);return{multi:m}}
     }
-    if(legs.length<S.games)return null;
-    const sig=legs.map(l=>l.fx+l.pick).sort().join('|');
-    if(!taken.has(sig)){taken.add(sig);return{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),day:S.day,legs,total:legs.reduce((a,l)=>a*l.odd,1),stake:S.stake,sig}}
+    return{};
   }
-  return null;
+  const T=Math.log(S.target.value),{lo,hi}=targetRange();
+  let best=null;
+  for(let attempt=0;attempt<2500;attempt++){
+    const pick=shuffle(cands).slice(0,S.games);
+    // Escolhe cada seleção perto da odd que falta repartir pelos jogos restantes, com alguma variedade.
+    let acc=0;const chosen=[];
+    pick.forEach((c,i)=>{
+      const ideal=(T-acc)/(pick.length-i);
+      const ranked=c.sel.map(s=>({s,d:Math.abs(Math.log(s.odd)-ideal)})).sort((a,b)=>a.d-b.d);
+      const s=ranked[Math.floor(Math.random()*Math.min(3,ranked.length))].s;
+      chosen.push(s);acc+=Math.log(s.odd);
+    });
+    // Afinação: troca uma seleção de cada vez pela que aproxima mais o total do alvo.
+    for(let pass=0;pass<2;pass++)pick.forEach((c,i)=>{
+      const rest=acc-Math.log(chosen[i].odd);
+      const s=c.sel.reduce((b,x)=>Math.abs(rest+Math.log(x.odd)-T)<Math.abs(rest+Math.log(b.odd)-T)?x:b,chosen[i]);
+      if(Math.random()<.7){acc=rest+Math.log(s.odd);chosen[i]=s}
+    });
+    const total=Math.exp(acc);
+    if(!best||Math.abs(acc-T)<Math.abs(Math.log(best)-T))best=total;
+    if(total<lo||total>hi)continue;
+    const m=makeMulti(pick.map((c,i)=>legOf(c.f,chosen[i])));
+    if(!taken.has(m.sig)){taken.add(m.sig);return{multi:m}}
+  }
+  return{best,bounds:oddBounds(cands)};
+}
+function noMultiMessage(p,r){
+  const n=p.filter(f=>candidates(f).length).length;
+  if(n<S.games)return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} odds dentro dos intervalos escolhidos. Alarga os intervalos, junta ligas ou baixa o número de jogos.`:'Nenhum jogo tem odds dentro dos intervalos escolhidos. Alarga os intervalos ou junta tipos de aposta.';
+  if(S.target.on&&r.bounds){const{lo,hi}=targetRange(),b=r.bounds;
+    if(b.max<lo)return`Com ${S.games} jogos e estes intervalos, a odd total vai no máximo até ${fmt(b.max)}. Junta jogos, sobe os máximos ou baixa o alvo.`;
+    if(b.min>hi)return`Com ${S.games} jogos e estes intervalos, a odd total nunca fica abaixo de ${fmt(b.min)}. Tira jogos, baixa os mínimos ou sobe o alvo.`;
+    return`Não encontrei uma multi entre ${fmt(lo)} e ${fmt(hi)}. O mais perto foi ${fmt(r.best)}. Alarga a margem ou junta tipos de aposta.`}
+  return'Nenhuma combinação cabe nos intervalos de odds escolhidos. Alarga os intervalos ou junta tipos de aposta.';
 }
 function pool(){return fixturesFor(S.day,new Set(selectedLeagues().map(l=>l.id)))}
 async function generate(scroll=true){
@@ -478,9 +539,11 @@ async function generate(scroll=true){
     const withType=p.filter(f=>S.types.some(mid=>S.mk[f.id][mid]));
     if(!withType.length){S.err='Nenhum destes jogos tem odds para os tipos de aposta escolhidos. Experimenta outros tipos.';return render()}
   }
-  const taken=new Set();
-  for(let i=0;i<S.perRun;i++){const m=buildMulti(p,taken);if(m)S.results.push(m)}
-  if(!S.results.length)S.err=p.length<S.games?`Só ${p.length} ${p.length===1?'jogo tem':'jogos têm'} odds disponíveis. Baixa o número de jogos ou junta ligas.`:'Nenhuma combinação cabe nos intervalos de odds escolhidos. Alarga os intervalos ou junta tipos de aposta.';
+  if(S.target.on&&!(S.target.value>=1.01)){S.err='Escreve uma odd total válida (maior que 1).';return render()}
+  const taken=new Set();let last={};
+  for(let i=0;i<S.perRun;i++){last=buildMulti(p,taken);if(last.multi)S.results.push(last.multi)}
+  if(!S.results.length)S.err=noMultiMessage(p,last);
+  else if(S.target.on&&S.results.length<S.perRun)S.err=`Só encontrei ${S.results.length} ${S.results.length===1?'combinação diferente':'combinações diferentes'} perto de ${fmt(S.target.value)}. Alarga a margem para veres mais.`;
   render();
   if(scroll)document.getElementById('results')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -543,6 +606,13 @@ function vGerar(){
       <label for="max-${mid}">Máx<input id="max-${mid}" type="number" step="0.05" min="1.01" inputmode="decimal" value="${r.max}" data-range="${mid}" data-k="max"></label></div>
       <div class="presets">${PRESETS.map((p,pi)=>`<button data-preset="${mid}:${pi}" aria-pressed="${r.min===p.min&&r.max===p.max}">${p.n} ${p.min}–${p.max}</button>`).join('')}</div></div>`}).join('')}</div>`
     :'<p class="hint">Escolhe um tipo de aposta para definir as odds de cada um.</p>'}</section>
+  <section class="step"><div class="step-h"><b>6</b><h2>Odd total</h2>
+      <button class="switch" data-act="target" role="switch" aria-checked="${S.target.on}" aria-label="Usar odd total alvo"><span></span></button></div>
+    ${S.target.on?`<div class="target">
+      <label class="tval" for="tval"><span>Quero perto de</span><input id="tval" type="number" step="0.1" min="1.01" inputmode="decimal" value="${S.target.value}"></label>
+      <div class="presets" role="group" aria-label="Margem">${[[.05,'Apertada ±5%'],[.1,'Normal ±10%'],[.2,'Larga ±20%']].map(([t,n])=>`<button data-tol="${t}" aria-pressed="${S.target.tol===t}">${n}</button>`).join('')}</div>
+      <p class="hint" id="trange">Bilhetes entre <b class="num">${fmt(targetRange().lo)}</b> e <b class="num">${fmt(targetRange().hi)}</b>. Cada jogo continua dentro do intervalo do seu mercado.</p></div>`
+    :'<p class="hint">Desligada: cada bilhete fica com a odd que calhar. Liga para escolheres a odd final.</p>'}</section>
   ${S.err?`<div class="alert" role="alert">${esc(S.err)}</div>`:''}
   <div id="results">${S.results.length?`<div class="res-h"><h2>As tuas multis</h2><span>${esc(dayLong(S.day))}</span></div><div class="tickets">${S.results.map((m,i)=>ticket(m,i,false)).join('')}</div>`:''}</div>`;
 }
@@ -580,7 +650,7 @@ function vPerfil(){
 }
 const HEROES={
   gerar:()=>{const sel=selectedLeagues();return{t:'Monta a tua multi',p:'Escolhe o dia, as ligas e os mercados. Nós juntamos os jogos.',
-    chips:[dayLong(S.day),`${S.games} jogos`,`${sel.length} ${sel.length===1?'liga':'ligas'}`,`${S.types.length} ${S.types.length===1?'mercado':'mercados'}`]}},
+    chips:[dayLong(S.day),`${S.games} jogos`,...(S.target.on?[`odd ≈ ${fmt(S.target.value)}`]:[]),`${sel.length} ${sel.length===1?'liga':'ligas'}`,`${S.types.length} ${S.types.length===1?'mercado':'mercados'}`]}},
   inicio:()=>({t:'Jogos do dia',p:'Jogos por começar nas ligas em destaque.',chips:[dayLong(S.day)]}),
   multis:()=>({t:'Guardadas',p:'As multis que guardaste neste dispositivo.',chips:[`${S.saved.length} ${S.saved.length===1?'multi':'multis'}`]}),
   perfil:()=>({t:'Ajustes',p:'Como queres que as multis sejam geradas.',chips:[]})
@@ -662,14 +732,16 @@ document.addEventListener('click',async e=>{
   if(d.loadodds){const id=d.loadodds;const p=ensureOdds(S.day,[id],['ft']);render();try{await p}catch(err){S.err=err.message}render();return}
   if(d.act==='toggleall'){S.showAll=!S.showAll;render();ensureDay(S.day);return}
   if(d.act==='gen'){generate();return}
-  if(d.act==='clear'){S.games=2;S.leagues=new Set();S.types=[];S.ranges={};S.results=[];S.err='';render();if(S.day!==days[0].key)setDay(days[0].key);window.scrollTo({top:0,behavior:'smooth'});return}
+  if(d.act==='target'){S.target.on=!S.target.on;S.err='';render();if(S.target.on)document.getElementById('tval')?.focus();return}
+  if(d.tol){S.target.tol=+d.tol;render();return}
+  if(d.act==='clear'){S.target={on:false,value:3,tol:.1};S.games=2;S.leagues=new Set();S.types=[];S.ranges={};S.results=[];S.err='';render();if(S.day!==days[0].key)setDay(days[0].key);window.scrollTo({top:0,behavior:'smooth'});return}
   if(d.act==='source'){S.source=isDemo()?'api':'demo';if(!isDemo())S.types=S.types.filter(apiSupports);S.notice='';S.leagues=new Set();S.results=[];S.err='';render();ensureDay(S.day);if(!isDemo())loadQuota();return}
   if(d.act==='delask'){S.confirmDel=true;render();return}
   if(d.act==='delno'){S.confirmDel=false;render();return}
   if(d.act==='delyes'){S.saved=[];store.set('saved',[]);S.confirmDel=false;render();return}
   if(d.reroll!==undefined){
     const i=+d.reroll;const p=pool().filter(f=>f.demo||S.mk[f.id]);
-    const taken=new Set(S.results.map(m=>m.sig));const m=buildMulti(p,taken);
+    const taken=new Set(S.results.map(m=>m.sig));const m=buildMulti(p,taken).multi;
     if(m){S.results[i]=m;S.err=''}else S.err='Não encontrei outra combinação diferente com estes filtros.';render();return}
   if(d.save){
     const m=S.results.find(x=>x.id===d.save);if(!m)return;
@@ -687,6 +759,8 @@ document.addEventListener('change',e=>{
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='q'){drawList();return}
+  if(t.id==='tval'){S.target.value=parseFloat(String(t.value).replace(',','.'));const r=document.getElementById('trange');
+    if(r)r.innerHTML=S.target.value>=1.01?`Bilhetes entre <b class="num">${fmt(targetRange().lo)}</b> e <b class="num">${fmt(targetRange().hi)}</b>. Cada jogo continua dentro do intervalo do seu mercado.`:'Escreve uma odd maior que 1.';return}
   if(t.id==='games'){S.games=+t.value;document.getElementById('gamesOut').textContent=S.games;return}
   if(t.dataset.range){const r={...rangeOf(t.dataset.range)};r[t.dataset.k]=parseFloat(String(t.value).replace(',','.'));S.ranges[t.dataset.range]=r;
     t.closest('.orow').querySelectorAll('[data-preset]').forEach(b=>{const p=PRESETS[+b.dataset.preset.split(':')[1]];b.setAttribute('aria-pressed',r.min===p.min&&r.max===p.max)});return}
