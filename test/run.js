@@ -142,4 +142,52 @@ r = await call('status', '');
 assert.equal(r.json.code, 'missing_key');
 
 mock.close();
+
+// ---------- estatísticas (football-data.org falsa) ----------
+{
+  const { ratings } = await import('../lib/ratings.js');
+  const day = 864e5, now = Date.parse('2026-11-01T00:00:00Z');
+  const T = (n) => ({ name: n, short: n, tla: n.slice(0, 3).toUpperCase() });
+  const ms = [];
+  // A ganha sempre em casa por 3-0; B e C empatam 1-1
+  for (let i = 0; i < 6; i++) ms.push({ t: now - i * 7 * day, home: T('A'), away: T(i % 2 ? 'B' : 'C'), hg: 3, ag: 0 });
+  for (let i = 0; i < 6; i++) ms.push({ t: now - i * 7 * day, home: T(i % 2 ? 'B' : 'C'), away: T(i % 2 ? 'C' : 'B'), hg: 1, ag: 1 });
+  ms.push({ t: now, home: T('A'), away: T('B'), hg: null, ag: null }); // por jogar: ignorado
+  const r = ratings(ms, now);
+  assert.equal(r.matches, 12);
+  const A = r.teams.find((t) => t.name === 'A');
+  assert.ok(A.attH > 1.2 && A.defH < 0.6, 'A forte em casa');
+  assert.ok(A.attA === 1 && A.defA === 1, 'sem jogos fora: fica na média');
+  assert.equal(A.form, 'VVVVV');
+  const old = ratings([{ t: now - 400 * day, home: T('X'), away: T('Y'), hg: 5, ag: 0 }, { t: now, home: T('Y'), away: T('X'), hg: 0, ag: 0 }], now);
+  assert.ok(old.avgHome < 2.5, 'jogos antigos pesam menos');
+}
+
+const fd = http.createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.headers['x-auth-token'] !== 'fd') { res.statusCode = 400; return res.end(JSON.stringify({ message: 'Your API token is invalid.' })); }
+  assert.match(req.url, /^\/competitions\/PPL\/matches\?status=FINISHED$/);
+  res.end(JSON.stringify({ filters: { season: '2026' }, matches: [
+    { utcDate: '2026-10-20T19:00:00Z', homeTeam: { name: 'Sport Lisboa e Benfica', shortName: 'Benfica', tla: 'SLB' }, awayTeam: { name: 'FC Porto', shortName: 'Porto', tla: 'FCP' }, score: { fullTime: { home: 2, away: 1 } } },
+    { utcDate: '2026-10-27T19:00:00Z', homeTeam: { name: 'FC Porto', shortName: 'Porto', tla: 'FCP' }, awayTeam: { name: 'Sport Lisboa e Benfica', shortName: 'Benfica', tla: 'SLB' }, score: { fullTime: { home: 0, away: 0 } } },
+  ] }));
+});
+await new Promise((r) => fd.listen(0, r));
+process.env.FOOTBALL_DATA_BASE = `http://127.0.0.1:${fd.address().port}`;
+r = await call('stats', 'league=soccer_epl');
+assert.equal(r.json.code, 'missing_key');
+process.env.FOOTBALL_DATA_KEY = 'fd';
+r = await call('stats', 'league=soccer_portugal_primeira_liga');
+assert.equal(r.status, 200, JSON.stringify(r.json));
+assert.equal(r.json.code, 'PPL');
+assert.equal(r.json.season, '2026');
+assert.equal(r.json.matches, 2);
+assert.equal(r.json.teams.find((t) => t.short === 'Benfica').form, 'EV');
+assert.match(r.headers['cache-control'], /s-maxage=21600/);
+r = await call('stats', 'league=soccer_turkey_super_league');
+assert.equal(r.json.code, 'no_stats');
+process.env.FOOTBALL_DATA_KEY = 'errada';
+r = await call('stats', 'league=soccer_portugal_primeira_liga');
+assert.equal(r.json.code, 'bad_key');
+fd.close();
 console.log('Tudo certo.');

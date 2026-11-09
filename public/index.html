@@ -83,8 +83,8 @@ h1 em{font-style:normal;color:var(--blue)}
 .stepper output{min-width:26px;text-align:center;font-family:var(--display);font-weight:800;font-size:22px}
 .critrow{border-top:1px solid var(--line);padding-top:12px}
 .critrow .lbl{padding:0 16px 8px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:4px;margin:0 16px 4px}
-.seg button{border:0;background:none;border-radius:9px;padding:8px 4px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:4px;margin:0 16px 4px}
+.seg button{border:0;background:none;border-radius:9px;padding:8px 2px;font-size:12.5px;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--card3);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line2)}
 .seg-note{margin:0;padding:6px 16px 14px;color:var(--muted);font-size:13px}
 
@@ -122,6 +122,10 @@ h1 em{font-style:normal;color:var(--blue)}
 .leg .p strong{color:var(--fg);font-weight:600}
 .leg .c{grid-column:2/4;font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center}
 .leg .c .good{color:var(--good);font-weight:600}
+.leg .c .mdl{color:var(--blue2);font-weight:600}
+.frm{display:inline-flex;gap:2px;margin-left:6px;vertical-align:1px}
+.frm i{font-style:normal;font-size:9px;font-weight:700;width:13px;height:13px;border-radius:3px;display:grid;place-items:center;color:#06101f}
+.frm .V{background:var(--good)}.frm .E{background:#8a96b8}.frm .D{background:var(--bad)}
 .leg .o{grid-row:1/3;grid-column:3;font-family:var(--display);font-weight:800;font-size:26px;line-height:1}
 .tk-f{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px 16px;border-top:1px solid var(--line);background:rgba(0,0,0,.12)}
 .stake{display:flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:0 10px;color:var(--muted);font-weight:600}
@@ -340,10 +344,13 @@ const DEMO_MODEL={
 const DEMO_BOOKS=[['Casa Exemplo A',1.05],['Casa Exemplo B',1.07],['Casa Exemplo C',1.09]];
 function demoSelections(f,mid){
   f._M??={ft:matrix(f.lh,f.la),h1:matrix(f.lh*.45,f.la*.45),h2:matrix(f.lh*.55,f.la*.55)};
-  return DEMO_MODEL[mid](f,f._M).filter(s=>s.p>.03&&s.p<.97).map(s=>{
+  // O "modelo" do exemplo usa golos esperados ligeiramente diferentes dos do mercado.
+  const md=modelOf(f),fm={...f,lh:md.lh,la:md.la},Mm={ft:matrix(md.lh,md.la),h1:matrix(md.lh*.45,md.la*.45),h2:matrix(md.lh*.55,md.la*.55)};
+  const mps=DEMO_MODEL[mid](fm,Mm);
+  return DEMO_MODEL[mid](f,f._M).map((s,i)=>({...s,mp:mps[i]?.p})).filter(s=>s.p>.03&&s.p<.97).map(s=>{
     const odds={};
     for(const[b,m]of DEMO_BOOKS){const noise=(rng(hash(f.id+s.pick+b))()-.5)*.12;odds[b]=Math.max(1.01,Math.round(100/(s.p*m)*(1+noise))/100)}
-    return pickOdd({pick:s.pick,p:s.p,n:DEMO_BOOKS.length,src:'modelo',odds});
+    const o=pickOdd({pick:s.pick,p:s.p,n:DEMO_BOOKS.length,src:'consenso',odds});return o&&withModel(o,s.mp);
   }).filter(Boolean);
 }
 
@@ -383,11 +390,12 @@ const PRESETS=[{n:'Qualquer',min:1.1,max:10},{n:'Seguras',min:1.1,max:1.5},{n:'E
 const CRITERIA={
   random:{n:'Ao calhas',d:'Combinações variadas dentro dos teus filtros.'},
   prob:{n:'Prováveis',d:'Dá prioridade às seleções que o mercado acha mais prováveis.'},
-  value:{n:'Com valor',d:'Só seleções em que a odd paga acima da probabilidade estimada pelo mercado.'}
+  value:{n:'Com valor',d:'Só seleções em que a odd paga acima da probabilidade estimada pelo mercado.'},
+  stats:{n:'Estatística',d:'Usa os golos e a forma das equipas esta época. Prefere seleções em que o modelo vê mais hipóteses do que o mercado.'}
 };
 const S={tab:'gerar',source:'loading',notice:'',day:days[0].key,games:3,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
   target:{on:false,value:3,tol:.1},crit:store.get('crit','prob'),book:store.get('book','best'),
-  showAll:false,dayData:{},oddsState:{},oddsHave:{},mk:{},quota:null,books:new Set(),
+  showAll:false,dayData:{},oddsState:{},oddsHave:{},mk:{},quota:null,books:new Set(),stats:{},statsOff:'',
   saved:store.get('saved',[]),stake:store.get('stake',5),perRun:store.get('perRun',3)};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>Number(n).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -430,6 +438,63 @@ async function ensureOdds(date,leagueIds,mids=['ft']){
   }
 }
 
+/* ---------- estatísticas (fase 2) ---------- */
+// Ligas com estatísticas grátis (football-data.org). Ver api/stats.js.
+const STATS_LEAGUES=new Set(['soccer_epl','soccer_efl_champ','soccer_spain_la_liga','soccer_italy_serie_a','soccer_germany_bundesliga','soccer_france_ligue_one','soccer_netherlands_eredivisie','soccer_portugal_primeira_liga','soccer_brazil_campeonato']);
+async function ensureStats(leagueIds){
+  if(isDemo()||S.statsOff)return;
+  for(const id of leagueIds){
+    if(!STATS_LEAGUES.has(id)||S.stats[id]?.status==='ok')continue;
+    S.stats[id]={status:'loading'};
+    try{S.stats[id]={status:'ok',data:await api(`/api/stats?league=${id}`)}}
+    catch(e){S.stats[id]={status:'error',err:e.message};if(['missing_key','bad_key'].includes(e.code)){S.statsOff=e.message;return}}
+  }
+}
+// Associa o nome da equipa na The Odds API ao nome na football-data.org.
+const STOP=new Set(['fc','cf','sc','afc','ac','ssc','as','sl','sad','cd','ud','rc','rcd','sv','vfl','vfb','tsg','fk','sk','bk','if','de','da','do','del','the','club','clube','futebol','calcio','and','e','y']);
+const ALIAS={'sporting lisbon':'sporting cp','inter milan':'inter','internazionale':'inter','ac milan':'milan','atletico madrid':'atleti','atletico de madrid':'atleti','athletic bilbao':'athletic','wolverhampton wanderers':'wolverhampton','brighton and hove albion':'brighton hove','tottenham hotspur':'tottenham','manchester united':'man united','manchester city':'man city','newcastle united':'newcastle','nottingham forest':'nottingham','paris saint germain':'psg','bayern munich':'bayern','borussia monchengladbach':'gladbach','psv eindhoven':'psv','az alkmaar':'az','vitoria guimaraes':'vitoria sc','sc braga':'braga','sporting braga':'braga'};
+const tokens=n=>{let x=n.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replace(/&/g,' and ').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();x=ALIAS[x]||x;return x.split(' ').filter(t=>t&&!STOP.has(t))};
+const teamCache={},MDL=new Map();
+function findTeam(name,league){
+  const k=league+'|'+name;if(k in teamCache)return teamCache[k];
+  const teams=S.stats[league]?.data?.teams||[];const a=tokens(name);let best=null,bs=0,second=0;
+  for(const t of teams){
+    let sc=0;
+    for(const cand of[t.name,t.short,t.tla]){if(!cand)continue;const b=tokens(cand);if(!b.length)continue;
+      const inter=a.filter(x=>b.includes(x)||b.some(y=>y.length>3&&x.length>3&&(y.startsWith(x)||x.startsWith(y)))).length;
+      sc=Math.max(sc,inter/Math.max(a.length,b.length)+(a.join(' ')===b.join(' ')?1:0))}
+    if(sc>bs){second=bs;bs=sc;best=t}else if(sc>second)second=sc}
+  return teamCache[k]=bs>=.5&&bs>second?best:null;
+}
+// Golos esperados de um jogo segundo o modelo, ou null se faltarem dados.
+function modelOf(f){
+  if(f.demo)return f._mdl??={lh:f.lh*(1+(rng(hash(f.id+'h'))()-.5)*.35),la:f.la*(1+(rng(hash(f.id+'a'))()-.5)*.35),
+    fh:[...Array(5)].map((_,i)=>'VED'[Math.floor(rng(hash(f.id+'fh'+i))()*3)]).join(''),fa:[...Array(5)].map((_,i)=>'VED'[Math.floor(rng(hash(f.id+'fa'+i))()*3)]).join('')};
+  const st=S.stats[f.lg?.id];if(st?.status!=='ok')return null;
+  if(MDL.has(f.id))return MDL.get(f.id);
+  const H=findTeam(f.home,f.lg.id),A=findTeam(f.away,f.lg.id),d=st.data;
+  const r=H&&A&&d.matches?{lh:d.avgHome*H.attH*A.defA,la:d.avgAway*A.attA*H.defH,fh:H.form,fa:A.form}:null;
+  MDL.set(f.id,r);return r;
+}
+// Distribuição de uma medida do jogo (ex.: golos casa − fora) a partir da matriz de resultados.
+function dist(m,f){const d=new Map();for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){const x=f(i,j);d.set(x,(d.get(x)||0)+m[i][j])}return d}
+// Probabilidade de ganhar uma aposta "X + linha > 0", sem contar devoluções; linhas de quarto dividem-se em duas.
+function lineP(d,line){
+  if(Math.abs(line*4%2)===1)return(lineP(d,line-.25)+lineP(d,line+.25))/2;
+  let w=0,l=0;for(const[x,p]of d){if(x+line>1e-9)w+=p;else if(x+line<-1e-9)l+=p}
+  return w+l?w/(w+l):null;
+}
+// Probabilidade do modelo para uma seleção da API (v: Home/Draw/Away/Over/Under, h: linha).
+function modelP(mid,s,mdl){
+  const m=mdl._m??=matrix(mdl.lh,mdl.la);
+  if(mid==='ft'){const r=res(m);return s.v==='Home'?r.h:s.v==='Away'?r.a:s.v==='Draw'?r.d:null}
+  if(mid==='ou'&&s.h!=null){const T=mdl._t??=dist(m,(i,j)=>i+j);const neg=new Map([...T].map(([x,p])=>[-x,p]));
+    return s.v==='Over'?lineP(T,-s.h):s.v==='Under'?lineP(neg,s.h):null}
+  if(mid==='hcp'&&s.h!=null){const D=mdl._d??=dist(m,(i,j)=>i-j);const R=new Map([...D].map(([x,p])=>[-x,p]));
+    return s.v==='Home'?lineP(D,s.h):s.v==='Away'?lineP(R,s.h):null}
+  return null;
+}
+
 /* ---------- consultas ---------- */
 function leaguesFor(date){
   if(isDemo())return DEMO_LEAGUES.map(l=>({...l,count:demoFixtures(date,l).length,curated:true}));
@@ -453,10 +518,12 @@ function pickOdd(s){
   if(!odd)return null;
   return{...s,odd,book,ev:s.p!=null?odd*s.p-1:null};
 }
+// Para escolher usa a média entre mercado e modelo: o modelo sozinho exagera quando lhe falta informação.
+const withModel=(s,mp)=>mp==null?s:{...s,mp,mev:s.odd*mp-1,bev:s.p!=null?s.odd*(s.p+mp)/2-1:s.odd*mp-1};
 function selections(f,mid){
   if(f.demo)return demoSelections(f,mid);
-  const m=S.mk[f.id]?.[mid];if(!m)return[];
-  return m.sel.map(s=>pickOdd({pick:translate(mid,s,f),p:s.p,n:s.n,src:s.src,odds:s.odds})).filter(Boolean);
+  const m=S.mk[f.id]?.[mid];if(!m)return[];const mdl=modelOf(f);
+  return m.sel.map(s=>{const o=pickOdd({pick:translate(mid,s,f),p:s.p,n:s.n,src:s.src,odds:s.odds});return o&&withModel(o,mdl?modelP(mid,s,mdl):null)}).filter(Boolean);
 }
 const selectedLeagues=()=>leaguesFor(S.day).filter(l=>S.leagues.has(l.id));
 
@@ -467,15 +534,16 @@ const targetRange=()=>({lo:S.target.value*(1-S.target.tol),hi:S.target.value*(1+
 function candidates(f){
   const out=[];
   for(const mid of S.types){const {min,max}=rangeOf(mid);
-    for(const s of selections(f,mid))if(s.odd>=min&&s.odd<=max&&(S.crit!=='value'||s.ev>0))out.push({...s,mid})}
+    for(const s of selections(f,mid))if(s.odd>=min&&s.odd<=max&&(S.crit!=='value'||s.ev>0)&&(S.crit!=='stats'||(s.mp!=null&&s.mp>s.p)))out.push({...s,mid})}
   return out;
 }
-const legOf=(f,s)=>({fx:f.id,league:f.lg.n,country:f.lg.c,time:f.time,match:`${f.home} vs ${f.away}`,market:MK[s.mid].n,mid:s.mid,pick:s.pick,odd:s.odd,book:s.book,p:s.p,ev:s.ev,src:s.src,n:s.n});
+const legOf=(f,s)=>({fx:f.id,league:f.lg.n,country:f.lg.c,time:f.time,match:`${f.home} vs ${f.away}`,market:MK[s.mid].n,mid:s.mid,pick:s.pick,odd:s.odd,book:s.book,p:s.p,ev:s.ev,src:s.src,n:s.n,mp:s.mp??null,mev:s.mev??null,bev:s.bev??null,fh:modelOf(f)?.fh||'',fa:modelOf(f)?.fa||''});
 function makeMulti(legs){
   legs=legs.slice().sort((a,b)=>String(a.time).localeCompare(String(b.time)));
   const total=legs.reduce((a,l)=>a*l.odd,1);
   const prob=legs.every(l=>l.p!=null)?legs.reduce((a,l)=>a*l.p,1):null;
-  return{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),day:S.day,legs,total,prob,ev:prob!=null?total*prob-1:null,stake:S.stake,
+  const mprob=legs.every(l=>l.mp!=null)?legs.reduce((a,l)=>a*l.mp,1):null;
+  return{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),day:S.day,legs,total,prob,ev:prob!=null?total*prob-1:null,mprob,mev:mprob!=null?total*mprob-1:null,stake:S.stake,
     sig:legs.map(l=>l.fx+'|'+l.pick).sort().join('/')};
 }
 function oddBounds(cands){
@@ -495,10 +563,10 @@ function search(fixtures,count,taken){
   const T=Math.log(S.target.value),{lo,hi}=targetRange();
   const usage=new Map(),out=[];let best=null;
   const used=c=>usage.get(c.f.id)||0;
-  const order=()=>cands.map(c=>({c,k:(S.crit==='prob'?maxP(c):S.crit==='value'?1+Math.max(...c.sel.map(s=>s.ev??0)):1)*(.7+Math.random()*.6)*Math.pow(.45,used(c))}))
+  const order=()=>cands.map(c=>({c,k:(S.crit==='prob'?maxP(c):S.crit==='value'?1+Math.max(...c.sel.map(s=>s.ev??0)):S.crit==='stats'?1+Math.max(...c.sel.map(s=>s.bev??0)):1)*(.7+Math.random()*.6)*Math.pow(.45,used(c))}))
     .sort((a,b)=>b.k-a.k).map(x=>x.c);
   const overlap=m=>m.legs.filter(l=>usage.has(l.fx)).length;
-  const rank=m=>(S.crit==='prob'?Math.log(m.prob||1e-9):S.crit==='value'?(m.ev??-1)*4:0)-overlap(m)*.35;
+  const rank=m=>(S.crit==='prob'?Math.log(m.prob||1e-9):S.crit==='value'?(m.ev??-1)*4:S.crit==='stats'?m.legs.reduce((a,l)=>a+(l.bev??-1),0)*2+Math.log(m.mprob||1e-9)*.5:0)-overlap(m)*.35;
   for(let n=0;n<count;n++){
     let pick1=null;const want=S.crit==='random'&&!S.target.on?1:40;let seen=0;
     for(let attempt=0;attempt<1500&&seen<want;attempt++){
@@ -506,7 +574,7 @@ function search(fixtures,count,taken){
       if(S.target.on){
         let acc=0;chosen=[];
         pick.forEach((c,i)=>{const ideal=(T-acc)/(pick.length-i);
-          const s=pickTop(c.sel,s=>-Math.abs(Math.log(s.odd)-ideal)+(S.crit==='prob'?(s.p??0)*.3:S.crit==='value'?(s.ev??0):0));
+          const s=pickTop(c.sel,s=>-Math.abs(Math.log(s.odd)-ideal)+(S.crit==='prob'?(s.p??0)*.3:S.crit==='value'?(s.ev??0):S.crit==='stats'?(s.bev??0):0));
           chosen.push(s);acc+=Math.log(s.odd)});
         for(let pass=0;pass<2;pass++)pick.forEach((c,i)=>{const rest=acc-Math.log(chosen[i].odd);
           const s=c.sel.reduce((b,x)=>Math.abs(rest+Math.log(x.odd)-T)<Math.abs(rest+Math.log(b.odd)-T)?x:b,chosen[i]);
@@ -515,7 +583,7 @@ function search(fixtures,count,taken){
         if(!best||Math.abs(acc-T)<Math.abs(Math.log(best)-T))best=total;
         if(total<lo||total>hi)continue;
       }else{
-        chosen=pick.map(c=>S.crit==='random'?c.sel[Math.floor(Math.random()*c.sel.length)]:pickTop(c.sel,s=>S.crit==='prob'?(s.p??0):(s.ev??-1),2));
+        chosen=pick.map(c=>S.crit==='random'?c.sel[Math.floor(Math.random()*c.sel.length)]:pickTop(c.sel,s=>S.crit==='prob'?(s.p??0):S.crit==='stats'?(s.bev??-1):(s.ev??-1),2));
       }
       const m=makeMulti(pick.map((c,i)=>legOf(c.f,chosen[i])));
       if(taken.has(m.sig))continue;
@@ -530,6 +598,10 @@ function search(fixtures,count,taken){
 }
 function noMultiMessage(r){
   if(r.short!=null){const n=r.short;
+    if(S.crit==='stats'){
+      if(S.statsOff)return`As estatísticas não estão disponíveis: ${S.statsOff}`;
+      return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} seleções em que o modelo vê mais hipóteses do que o mercado. Junta ligas, alarga os intervalos ou muda o critério.`:'O modelo não encontrou seleções acima do mercado nestes jogos. Há estatísticas para Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão.';
+    }
     if(S.crit==='value')return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} seleções com valor dentro dos teus filtros. Junta ligas, alarga os intervalos ou muda o critério.`:`Nenhuma seleção destes jogos tem valor positivo dentro dos teus filtros. ${S.book!=='best'?'Escolhe "Melhor odd" nos Ajustes, junta':'Junta'} ligas, alarga os intervalos ou experimenta "Prováveis".`;
     return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} odds dentro dos intervalos escolhidos. Alarga os intervalos, junta ligas ou baixa o número de jogos.`:'Nenhum jogo tem odds dentro dos intervalos escolhidos. Alarga os intervalos ou junta mercados.'}
   if(S.target.on&&r.bounds){const{lo,hi}=targetRange(),b=r.bounds;
@@ -554,6 +626,7 @@ async function generate(scroll=true){
     S.busy=true;render();
     try{await ensureOdds(S.day,sel.map(l=>l.id),S.types)}
     catch(e){S.busy=false;S.err=`Não consegui carregar as odds: ${e.message}`;return render()}
+    await ensureStats(sel.map(l=>l.id));
     S.busy=false;
     p=p.filter(f=>S.mk[f.id]&&Object.keys(S.mk[f.id]).length);
     if(!p.length){S.err='Ainda não há odds para estes jogos. As casas costumam publicá-las uns dias antes.';return render()}
@@ -582,6 +655,7 @@ const I={
   save:on=>`<svg viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>`
 };
 const SPIN='<span class="spin" aria-hidden="true"></span>';
+const frm=s=>s?`<span class="frm" title="Últimos jogos, do mais recente para o mais antigo">${[...s].map(c=>`<i class="${c}">${c}</i>`).join('')}</span>`:'';
 
 /* ---------- vistas ---------- */
 function ticket(m,i,savedView){
@@ -589,12 +663,12 @@ function ticket(m,i,savedView){
   return `<article class="tk">
     <div class="tk-h"><div><small>${savedView?esc(dayLong(m.day)):'Multi '+(i+1)}</small><span class="t">${m.legs.length} seleções</span></div>
       <div class="tk-odd"><small>Odd total</small><span class="big">${fmt(m.total)}</span></div></div>
-    ${m.prob!=null?`<div class="tk-stats"><span class="chip">Probabilidade <b>${pct(m.prob,m.prob<.1?1:0)}</b></span>${m.ev!=null?`<span class="chip ${m.ev>0?'good':''}">Valor <b>${sgn(m.ev)}</b></span>`:''}</div>
+    ${m.prob!=null?`<div class="tk-stats"><span class="chip">Mercado <b>${pct(m.prob,m.prob<.1?1:0)}</b></span>${m.mprob!=null?`<span class="chip">Modelo <b>${pct(m.mprob,m.mprob<.1?1:0)}</b></span>`:''}${m.ev!=null?`<span class="chip ${m.ev>0?'good':''}">Valor <b>${sgn(m.ev)}</b></span>`:''}</div>
       <div class="bar" aria-hidden="true"><i style="width:${Math.max(2,Math.min(100,m.prob*100))}%"></i></div>`:''}
     <ol class="legs">${m.legs.map(l=>`<li class="leg"><time>${esc(l.time)}</time>
       <span class="m">${esc(l.match)}</span><span class="o">${fmt(l.odd)}</span>
       <span class="p">${esc(SHORT[l.mid]||l.market)} · <strong>${esc(l.pick)}</strong></span>
-      <span class="c"><span>${esc(l.league)}</span>${l.book?`<span>${esc(l.book)}</span>`:''}${l.p!=null?`<span>Prob. ${pct(l.p)}</span>`:''}${l.ev!=null?`<span class="${l.ev>0?'good':''}">Valor ${sgn(l.ev)}</span>`:''}</span></li>`).join('')}</ol>
+      <span class="c"><span>${esc(l.league)}</span>${l.book?`<span>${esc(l.book)}</span>`:''}${l.p!=null?`<span>Mercado ${pct(l.p)}</span>`:''}${l.mp!=null?`<span class="mdl">Modelo ${pct(l.mp)}</span>`:''}${l.ev!=null?`<span class="${l.ev>0?'good':''}">Valor ${sgn(l.ev)}</span>`:''}${l.fh||l.fa?`<span>Forma ${frm(l.fh)} · ${frm(l.fa)}</span>`:''}</span></li>`).join('')}</ol>
     <div class="tk-f">
       <label class="stake" for="stake-${m.id}"><input id="stake-${m.id}" type="number" min="0" step="0.5" inputmode="decimal" value="${m.stake}" data-stake="${m.id}" aria-label="Valor da aposta">€</label>
       <span class="ret">Retorno<b data-ret="${m.id}">${fmt(m.stake*m.total)} €</b></span>
@@ -646,7 +720,7 @@ function vJogos(){
   ${ls.length?ls.map(l=>{const st=S.oddsHave[S.day+'|'+l.id]?.has('ft')?'ok':S.oddsState[S.day+'|'+l.id];return`<div class="lg"><div class="lg-h"><span class="cc">${esc(l.cc)}</span><b>${esc(l.n)}</b>
     ${isDemo()||st==='ok'?'':`<button class="btn" data-loadodds="${l.id}" ${st==='loading'?'disabled':''}>${st==='loading'?SPIN:''}${st==='error'?'Tentar de novo':'Ver odds'}</button>`}</div>
     ${fx.filter(f=>f.lg.id===l.id).map(f=>{const s=selections(f,'ft');const o=k=>{const x=s.find(x=>x.pick===k);return x?`${fmt(x.odd)}<em>${pct(x.p)}</em>`:'–<em>&nbsp;</em>'};return`<div class="g"><time>${esc(f.time)}</time>
-    <div class="tm"><div>${esc(f.home)}</div><div>${esc(f.away)}</div></div>
+    <div class="tm"><div>${esc(f.home)}${frm(modelOf(f)?.fh)}</div><div>${esc(f.away)}${frm(modelOf(f)?.fa)}</div></div>
     <div class="x3"><span>${o(f.home)}</span><span>${o('Empate')}</span><span>${o(f.away)}</span></div></div>`}).join('')}</div>`}).join('')
   :(S.dayData[S.day]?.status==='ok'||isDemo()?'<div class="empty"><strong>Sem jogos</strong>Não há jogos por começar nas ligas em destaque neste dia.</div>':'')}
   ${!isDemo()&&S.dayData[S.day]?.status==='ok'?`<button class="more" data-act="toggleall">${S.showAll?'Mostrar só as ligas em destaque':'Mostrar todas as ligas'}</button>`:''}`;
@@ -660,6 +734,7 @@ function vAjustes(){
   return `<h1>Ajus<em>tes</em></h1><div class="panel set">
   <div class="row"><span class="rt"><b>Origem dos dados</b><span>${isDemo()?'Dados de exemplo':'The Odds API, odds reais'}</span></span>
     ${S.apiOk?`<button class="btn" data-act="source">${isDemo()?'Usar API':'Usar exemplo'}</button>`:''}</div>
+  ${!isDemo()?`<div class="row"><span class="rt"><b>Estatísticas das equipas</b><span>${S.statsOff?esc(S.statsOff):Object.values(S.stats).some(x=>x.status==='ok')?'football-data.org, ativas':'football-data.org, carregam quando geras'}</span></span></div>`:''}
   ${!isDemo()?`<div class="row"><span class="rt"><b>Créditos este mês</b><span>${q?(q.remaining!=null?`Faltam ${q.remaining} de ${q.total}`:'Sem informação'):S.quotaErr?esc(S.quotaErr):'A verificar…'}</span></span></div>`:''}
   <div class="row"><span class="rt"><b>Casa de apostas</b><span>De onde vem a odd de cada seleção</span></span>
     <select id="book" aria-label="Casa de apostas"><option value="best" ${S.book==='best'?'selected':''}>Melhor odd</option>${books.map(b=>`<option value="${esc(b)}" ${S.book===b?'selected':''}>${esc(b)}</option>`).join('')}</select></div>
@@ -674,6 +749,7 @@ function vAjustes(){
   <div class="explain"><h3>Como se calcula a probabilidade</h3>
     <p>Cada casa de apostas mete uma margem nas odds. A app tira essa margem e fica com a probabilidade que o mercado atribui a cada resultado. Usa a Pinnacle, que tem a margem mais baixa, quando existe; senão, a mediana das casas.</p>
     <p><b>Valor</b> é quanto a odd paga acima dessa probabilidade. Valor positivo não garante que a aposta ganha; diz que, a longo prazo, a odd é mais justa do que o habitual.</p>
+    <p><b>Modelo</b> é a estimativa da app com base nos golos marcados e sofridos esta época, em casa e fora, com mais peso nos jogos recentes. Funciona para Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão. Não sabe de lesões, castigos nem motivação; o mercado sabe.</p>
     <p>A probabilidade de uma multi assume que os jogos são independentes.</p></div>
   <p class="note">${isDemo()?'Os jogos e as odds são de exemplo. ':'Odds pré-jogo da The Odds API; podem mudar até ao início do jogo. Confirma sempre na casa de apostas. '}18+ · Joga com responsabilidade.</p>`;
 }
@@ -778,7 +854,7 @@ document.addEventListener('click',async e=>{
   if(d.preset){const[mid,pi]=d.preset.split(':');const p=PRESETS[+pi];S.ranges[mid]={min:p.min,max:p.max};drawSheet();return}
   if(d.act==='target'){S.target.on=!S.target.on;S.err='';drawSheet();if(S.target.on)document.getElementById('tval')?.focus();return}
   if(d.tol){S.target.tol=+d.tol;drawSheet();return}
-  if(d.loadodds){S.err='';const p=ensureOdds(S.day,[d.loadodds],['ft']);render();try{await p}catch(err){S.err=`Não consegui carregar as odds: ${err.message}`}render();return}
+  if(d.loadodds){S.err='';const p=ensureOdds(S.day,[d.loadodds],['ft']);render();try{await p;await ensureStats([d.loadodds])}catch(err){S.err=`Não consegui carregar as odds: ${err.message}`}render();return}
   if(d.act==='toggleall'){S.showAll=!S.showAll;render();ensureDay(S.day);return}
   if(d.act==='gen'){generate();return}
   if(d.act==='source'){S.source=isDemo()?'api':'demo';if(!isDemo())S.types=S.types.filter(apiSupports);S.notice='';S.leagues=new Set();S.results=[];S.err='';render();ensureDay(S.day);if(!isDemo())loadQuota();return}

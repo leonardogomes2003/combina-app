@@ -8,7 +8,9 @@ Gera multis de futebol a partir das ligas, dos tipos de aposta e dos intervalos 
 public/index.html   a app (HTML, CSS e JS num só ficheiro, instalável no telemóvel)
 api/events.js       GET /api/events?date=AAAA-MM-DD[&all=1]           jogos por começar nesse dia (grátis)
 api/odds.js         GET /api/odds?date=…&league=soccer_epl&markets=ft,ou,hcp   odds de uma liga nesse dia, com a leitura do mercado
+api/stats.js        GET /api/stats?league=soccer_portugal_primeira_liga       forças das equipas na época (football-data.org)
 api/status.js       GET /api/status                                    créditos que faltam (grátis)
+lib/ratings.js      modelo: ataque e defesa em casa e fora, com mais peso nos jogos recentes
 lib/oddsApi.js      cliente da The Odds API, datas de Lisboa, erros e cache
 ```
 
@@ -22,6 +24,14 @@ Para cada seleção, `api/odds.js` junta as odds de todas as casas e calcula a p
 - **Valor** = odd × probabilidade − 1. Positivo quer dizer que a odd paga acima do que o mercado estima.
 - **Critério** de geração: *Ao calhas*, *Prováveis* (prioridade às seleções mais prováveis) ou *Com valor* (só seleções com valor positivo).
 - Nos Ajustes escolhes a casa de onde vem a odd, ou *Melhor odd* (a mais alta entre as casas).
+
+## Estatísticas (fase 2)
+
+`api/stats.js` vai buscar os jogos terminados da época à [football-data.org](https://www.football-data.org) (plano grátis, 10 pedidos/minuto, 1 pedido por liga, guardado 6 h) e `lib/ratings.js` calcula, para cada equipa, a força de ataque e de defesa em casa e fora, relativas à média da liga. Jogos recentes pesam mais (meia-vida de 120 dias) e cada equipa começa com 4 jogos fictícios na média, para não exagerar no início da época.
+
+Na app, os golos esperados de cada jogo dão (por Poisson) a probabilidade do **Modelo** para resultado final, golos e handicap, ao lado da do **Mercado**, mais a forma dos últimos 5 jogos. O critério *Estatística* só usa seleções em que o modelo vê mais hipóteses do que o mercado, e ordena pela média das duas estimativas.
+
+Ligas com estatísticas: Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão. O modelo não sabe de lesões, castigos, calendário nem motivação.
 
 ## Créditos (plano grátis: 500 por mês)
 
@@ -38,6 +48,7 @@ No plano grátis só há três mercados no pedido por liga: Resultado Final (`h2
 2. Em **Settings → Environment Variables** adiciona:
    - `ODDS_API_KEY`: a tua chave (chega por email depois de te registares em the-odds-api.com).
    - `PREFERRED_BOOKMAKERS` (opcional): casas de apostas por ordem de preferência, separadas por vírgulas. Por defeito `Betclic,Unibet,Pinnacle,Bet365`.
+   - `FOOTBALL_DATA_KEY`: chave grátis da football-data.org (para as estatísticas). Sem ela, a app funciona na mesma, sem o modelo.
    - `ODDS_REGIONS` (opcional): região das casas de apostas. Por defeito `eu`. Cada região a mais multiplica os créditos gastos.
 3. Faz **Redeploy** para as variáveis entrarem em vigor.
 
