@@ -69,6 +69,10 @@ h1 em{font-style:normal;color:var(--blue)}
 .row:first-child{border-top:0}
 .ico{width:34px;height:34px;border-radius:11px;background:var(--card2);display:grid;place-items:center;flex:none;color:var(--blue2)}
 .ico svg{width:18px;height:18px}
+.panel .ico{font-family:var(--display);font-weight:800;font-size:18px}
+.panel .ico.ok{background:var(--blue);color:#fff}
+.todo{color:var(--blue2);font-weight:600}
+.opt{font-style:normal;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-left:6px}
 .rt{flex:1;min-width:0}
 .rt b{display:block;font-weight:600;font-size:15px}
 .rt span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -375,7 +379,7 @@ const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()+i*864e5);const 
   return{key:ymd(d),wd:i===0?'Hoje':i===1?'Amanhã':d.toLocaleDateString('pt-PT',{...o,weekday:'short'}).replace('.',''),
     dd:d.toLocaleDateString('pt-PT',{...o,day:'2-digit'}),
     long:i===0?'Hoje':i===1?'Amanhã':d.toLocaleDateString('pt-PT',{...o,weekday:'long',day:'numeric',month:'short'}).replace('.','')}});
-const PRESETS=[{n:'Seguras',min:1.1,max:1.5},{n:'Equilibradas',min:1.5,max:2.5},{n:'Arriscadas',min:2.5,max:10}];
+const PRESETS=[{n:'Qualquer',min:1.1,max:10},{n:'Seguras',min:1.1,max:1.5},{n:'Equilibradas',min:1.5,max:2.5},{n:'Arriscadas',min:2.5,max:10}];
 const CRITERIA={
   random:{n:'Ao calhas',d:'Combinações variadas dentro dos teus filtros.'},
   prob:{n:'Prováveis',d:'Dá prioridade às seleções que o mercado acha mais prováveis.'},
@@ -540,7 +544,7 @@ async function generate(scroll=true){
   S.err='';S.results=[];
   const sel=selectedLeagues();
   if(!sel.length){S.err='Escolhe pelo menos uma liga com jogos neste dia.';return render()}
-  if(!S.types.length){S.err='Escolhe pelo menos um mercado.';return render()}
+  if(!S.types.length){S.err='Escolhe pelo menos um tipo de aposta.';return render()}
   if(!isDemo()&&!S.types.some(apiSupports)){S.err='Com a API grátis só há odds de Resultado Final, Mais/Menos Golos e Handicap. Escolhe pelo menos um destes.';return render()}
   for(const mid of S.types){const r=rangeOf(mid);if(!(r.min>=1.01&&r.max>=r.min)){S.err=`O intervalo de odds de "${MK[mid].n}" não é válido.`;return render()}}
   if(S.target.on&&!(S.target.value>=1.01)){S.err='Escreve uma odd total válida (maior que 1).';return render()}
@@ -613,17 +617,19 @@ function dayProblem(){
 }
 function vGerar(){
   const sel=selectedLeagues(),games=sel.reduce((a,l)=>a+l.count,0);
-  const rangesTxt=S.types.map(id=>{const r=rangeOf(id);return`${SHORT[id]||MK[id].n} ${fmt(r.min)}–${fmt(r.max)}`}).join(' · ');
+  const anyOdd=r=>r.min<=1.1&&r.max>=10;
+  const rangesTxt=S.types.map(id=>{const r=rangeOf(id);return`${SHORT[id]||MK[id].n} ${anyOdd(r)?'qualquer odd':`${fmt(r.min)}–${fmt(r.max)}`}`}).join(' · ');
+  const todo=t=>`<span class="todo">${t}</span>`;
   return `${S.notice?`<div class="notice">${esc(S.notice)}</div>`:''}
   <h1>Monta a tua <em>multi</em></h1>
   ${dayStrip()}${dayProblem()}
   <div class="panel">
-    <button class="row" data-open="leagues"><span class="ico">${I.trophy}</span><span class="rt"><b>Ligas</b><span>${sel.length?esc(sel.map(l=>l.n).join(', ')):'Nenhuma escolhida'}</span></span><span class="rv">${sel.length?`${games} jogos`:''}${I.chev}</span></button>
-    <button class="row" data-open="types"><span class="ico">${I.list}</span><span class="rt"><b>Mercados</b><span>${S.types.length?esc(S.types.map(id=>MK[id].n).join(', ')):'Nenhum escolhido'}</span></span><span class="rv">${S.types.length}/6${I.chev}</span></button>
-    <button class="row" data-open="ranges" ${S.types.length?'':'disabled'}><span class="ico">${I.sliders}</span><span class="rt"><b>Odds por seleção</b><span>${S.types.length?esc(rangesTxt):'Escolhe primeiro os mercados'}</span></span><span class="rv">${I.chev}</span></button>
-    <div class="row"><span class="ico">${I.hash}</span><span class="rt"><b>Jogos por multi</b><span>Seleções em cada bilhete</span></span>
+    <button class="row" data-open="leagues"><span class="ico${sel.length?' ok':''}">1</span><span class="rt"><b>Ligas</b><span>${sel.length?esc(sel.map(l=>l.n).join(', ')):todo('Escolhe as ligas')}</span></span><span class="rv">${sel.length?`${games} jogos`:''}${I.chev}</span></button>
+    <button class="row" data-open="types"><span class="ico${S.types.length?' ok':''}">2</span><span class="rt"><b>Tipos de aposta</b><span>${S.types.length?esc(S.types.map(id=>MK[id].n).join(', ')):todo('Escolhe os tipos de aposta')}</span></span><span class="rv">${S.types.length}/6${I.chev}</span></button>
+    <button class="row" data-open="ranges" ${S.types.length?'':'disabled'}><span class="ico">3</span><span class="rt"><b>Odds de cada seleção <em class="opt">opcional</em></b><span>${S.types.length?esc(rangesTxt):'Escolhe primeiro os tipos de aposta'}</span></span><span class="rv">${I.chev}</span></button>
+    <div class="row"><span class="ico">4</span><span class="rt"><b>Jogos por multi</b><span>Seleções em cada bilhete</span></span>
       <span class="stepper"><button data-games="-1" aria-label="Menos jogos" ${S.games<=2?'disabled':''}>−</button><output class="n">${S.games}</output><button data-games="1" aria-label="Mais jogos" ${S.games>=10?'disabled':''}>+</button></span></div>
-    <button class="row" data-open="target"><span class="ico">${I.target}</span><span class="rt"><b>Odd total</b><span>${S.target.on?`Entre ${fmt(targetRange().lo)} e ${fmt(targetRange().hi)}`:'Livre'}</span></span><span class="rv">${S.target.on?`≈ ${fmt(S.target.value)}`:''}${I.chev}</span></button>
+    <button class="row" data-open="target"><span class="ico">5</span><span class="rt"><b>Odd total <em class="opt">opcional</em></b><span>${S.target.on?`Entre ${fmt(targetRange().lo)} e ${fmt(targetRange().hi)}`:'Livre'}</span></span><span class="rv">${S.target.on?`≈ ${fmt(S.target.value)}`:''}${I.chev}</span></button>
     <div class="critrow"><div class="lbl">Critério</div>
       <div class="seg" role="group" aria-label="Critério">${Object.entries(CRITERIA).map(([k,c])=>`<button data-crit="${k}" aria-pressed="${S.crit===k}">${c.n}</button>`).join('')}</div>
       <p class="seg-note">${CRITERIA[S.crit].d}</p></div>
@@ -688,14 +694,14 @@ function render(){
 /* ---------- folhas ---------- */
 let draft=null;
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'');
-const SHEETS={leagues:'Ligas',types:'Mercados',ranges:'Odds por seleção',target:'Odd total'};
+const SHEETS={leagues:'Ligas',types:'Tipos de aposta',ranges:'Odds de cada seleção',target:'Odd total'};
 function openSheet(kind){
   draft=kind==='leagues'?new Set(S.leagues):kind==='types'?S.types.slice():null;
   const el=document.getElementById('sheet');el.hidden=false;el.dataset.kind=kind;
   const searchable=kind==='leagues'||kind==='types';
   el.innerHTML=`<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-modal="true" aria-label="${SHEETS[kind]}"><div class="grab"></div>
   <div class="sh"><h2>${SHEETS[kind]}</h2><button data-close aria-label="Fechar">${I.x}</button></div>
-  <div class="sb">${searchable?`<label class="search" for="q">${I.search}<input id="q" type="search" placeholder="${kind==='leagues'?'Procurar liga ou país':'Procurar mercado'}" autocomplete="off"></label>`:''}
+  <div class="sb">${searchable?`<label class="search" for="q">${I.search}<input id="q" type="search" placeholder="${kind==='leagues'?'Procurar liga ou país':'Procurar tipo de aposta'}" autocomplete="off"></label>`:''}
   ${kind==='leagues'?'<div class="quick" id="quick"></div>':''}<div id="list"></div></div>
   <div class="sf"><span class="meta" id="sfmeta"></span><button class="go" data-confirm>${searchable?'Confirmar':'Feito'}</button></div></div></div>`;
   drawSheet();document.body.style.overflow='hidden';
@@ -730,8 +736,8 @@ function drawSheet(){
     list.innerHTML=S.types.map(mid=>{const r=rangeOf(mid);return`<div class="orow"><h3>${MK[mid].n}</h3>
       <div class="oin"><label for="min-${mid}">Mín<input id="min-${mid}" type="number" step="0.05" min="1.01" inputmode="decimal" value="${r.min}" data-range="${mid}" data-k="min"></label>
       <label for="max-${mid}">Máx<input id="max-${mid}" type="number" step="0.05" min="1.01" inputmode="decimal" value="${r.max}" data-range="${mid}" data-k="max"></label></div>
-      <div class="pre">${PRESETS.map((p,pi)=>`<button data-preset="${mid}:${pi}" aria-pressed="${r.min===p.min&&r.max===p.max}">${p.n} ${fmt(p.min)}–${fmt(p.max)}</button>`).join('')}</div></div>`}).join('');
-    document.getElementById('sfmeta').textContent='Cada seleção tem de ficar dentro do intervalo do seu mercado.';
+      <div class="pre">${PRESETS.map((p,pi)=>`<button data-preset="${mid}:${pi}" aria-pressed="${r.min===p.min&&r.max===p.max}">${p.n}${pi?` ${fmt(p.min)}–${fmt(p.max)}`:''}</button>`).join('')}</div></div>`}).join('');
+    document.getElementById('sfmeta').textContent='Opcional. Se não mexeres, vale qualquer odd.';
   }else if(kind==='target'){
     const{lo,hi}=targetRange();
     list.innerHTML=`<div class="tgl"><span><b>Escolher a odd total</b><small>Desligado, cada multi fica com a odd que calhar.</small></span>
@@ -766,7 +772,8 @@ document.addEventListener('click',async e=>{
   if('confirm' in d){
     const kind=document.getElementById('sheet').dataset.kind;
     if(kind==='leagues')S.leagues=draft;
-    else if(kind==='types'){S.types=draft;for(const k of Object.keys(S.ranges))if(!S.types.includes(k))delete S.ranges[k]}
+    else if(kind==='types'){const added=draft.some(id=>!S.types.includes(id));S.types=draft;for(const k of Object.keys(S.ranges))if(!S.types.includes(k))delete S.ranges[k];
+      closeSheet();S.err='';render();if(added)openSheet('ranges');return}
     closeSheet();S.err='';render();return}
   if(d.preset){const[mid,pi]=d.preset.split(':');const p=PRESETS[+pi];S.ranges[mid]={min:p.min,max:p.max};drawSheet();return}
   if(d.act==='target'){S.target.on=!S.target.on;S.err='';drawSheet();if(S.target.on)document.getElementById('tval')?.focus();return}
@@ -817,11 +824,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElemen
     const j=await api(`/api/events?date=${S.day}`);
     S.source='api';S.apiOk=true;S.dayData[S.day]={status:'ok',fixtures:j.fixtures};
     S.leagues=new Set(['soccer_portugal_primeira_liga','soccer_epl','soccer_spain_la_liga'].filter(id=>leaguesFor(S.day).some(l=>l.id===id)));
-    defaults();render();
+    render();
   }catch(e){
     if(e.code&&!['missing_key','no_server'].includes(e.code)){
       // O servidor está a funcionar mas a API recusou: mostra o erro em vez de esconder.
-      S.source='api';S.apiOk=true;S.dayData[S.day]={status:'error',err:e.message};defaults();render();return;
+      S.source='api';S.apiOk=true;S.dayData[S.day]={status:'error',err:e.message};render();return;
     }
     S.source='demo';S.apiOk=false;
     S.notice=e.code==='missing_key'?'Falta configurar a chave da The Odds API. Até lá, estás a ver dados de exemplo.':'Sem ligação ao servidor. Estás a ver dados de exemplo.';
