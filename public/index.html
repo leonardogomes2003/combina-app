@@ -82,11 +82,25 @@ h1 em{font-style:normal;color:var(--blue)}
 .stepper button{width:36px;height:36px;border:0;background:none;font-size:20px;font-weight:600;color:var(--blue2)}
 .stepper output{min-width:26px;text-align:center;font-family:var(--display);font-weight:800;font-size:22px}
 .critrow{border-top:1px solid var(--line);padding-top:12px}
+.crit{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 16px}
+.crit button{border:1px solid var(--line);background:var(--bg2);border-radius:14px;padding:11px 12px;text-align:left;display:grid;gap:3px;align-content:start}
+.crit button b{font-weight:600;font-size:14px}
+.crit button span{font-size:12px;color:var(--muted);line-height:1.35}
+.crit button[aria-pressed="true"]{border-color:var(--blue);background:rgba(61,125,255,.14);box-shadow:inset 0 0 0 1px var(--blue)}
+.tk-chance{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;padding:0 18px 12px;font-size:13px;color:var(--muted)}
+.tk-chance b{justify-self:end;color:var(--fg);font-size:15px}
+.tk-chance .bar{grid-column:1/3;margin:2px 0 0}
+.lvl{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;letter-spacing:.02em}
+.lvl.l5{background:rgba(61,220,151,.16);color:var(--good)}
+.lvl.l4{background:rgba(134,173,255,.16);color:var(--blue2)}
+.lvl.l3{background:rgba(147,163,204,.16);color:var(--muted)}
+.lvl.l2{background:rgba(255,207,92,.14);color:var(--warn)}
+.lvl.l1{background:var(--bad-bg);color:var(--bad)}
+.lvl.good{background:var(--good-bg);color:var(--good)}
+.det{grid-column:2/4;display:grid;gap:3px;margin-top:6px;padding:8px 10px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--muted)}
+.det b{color:var(--fg);font-weight:600}
+.more-btn{width:100%;border:0;background:none;color:var(--blue2);font-weight:600;font-size:13px;padding:2px 0 0;text-align:center}
 .critrow .lbl{padding:0 16px 8px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:4px;margin:0 16px 4px}
-.seg button{border:0;background:none;border-radius:9px;padding:8px 2px;font-size:12.5px;font-weight:600;color:var(--muted)}
-.seg button[aria-pressed="true"]{background:var(--card3);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line2)}
-.seg-note{margin:0;padding:6px 16px 14px;color:var(--muted);font-size:13px}
 
 .alert{background:var(--bad-bg);color:var(--bad);border:1px solid rgba(255,122,122,.25);border-radius:14px;padding:12px 14px;font-size:14px;font-weight:500;margin:14px 0 0}
 .notice{background:rgba(255,207,92,.1);color:var(--warn);border:1px solid rgba(255,207,92,.25);border-radius:14px;padding:12px 14px;font-size:14px;margin:0 0 14px}
@@ -111,7 +125,7 @@ h1 em{font-style:normal;color:var(--blue)}
 .chip b{color:var(--fg);font-weight:600}
 .chip.good{background:var(--good-bg);color:var(--good);border-color:transparent}
 .chip.good b{color:var(--good)}
-.bar{height:3px;background:var(--bg2);margin:0 18px;border-radius:3px;overflow:hidden}
+.bar{display:block;height:4px;background:var(--bg2);border-radius:3px;overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--blue2));border-radius:3px}
 .legs{list-style:none;margin:6px 0 0;padding:0 18px}
 .leg{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:2px 12px;padding:12px 0;border-top:1px solid var(--line);align-items:center}
@@ -317,28 +331,37 @@ const over=(l,line)=>{let c=0;for(let k=0;k<=Math.floor(line);k++)c+=pois(l,k);r
 function matrix(lh,la){const m=[];for(let i=0;i<=10;i++){m[i]=[];for(let j=0;j<=10;j++)m[i][j]=pois(lh,i)*pois(la,j)}return m}
 function sumM(m,f){let s=0;for(let i=0;i<=10;i++)for(let j=0;j<=10;j++)if(f(i,j))s+=m[i][j];return s}
 function res(m){return{h:sumM(m,(i,j)=>i>j),d:sumM(m,(i,j)=>i===j),a:sumM(m,(i,j)=>i<j)}}
-const ouP=(l,lines,pre='')=>lines.flatMap(x=>[{pick:`${pre}Mais de ${String(x).replace('.',',')}`,p:over(l,x)},{pick:`${pre}Menos de ${String(x).replace('.',',')}`,p:1-over(l,x)}]);
-const hcpP=(m,f,lines)=>lines.flatMap(x=>[{pick:`${f.home} ${x>0?'+':''}${String(x).replace('.',',')}`,p:sumM(m,(i,j)=>i-j+x>0)},{pick:`${f.away} ${-x>0?'+':''}${String(-x).replace('.',',')}`,p:sumM(m,(i,j)=>j-i-x>0)}]);
+const dec=x=>String(x).replace('.',',');
+// Frases simples: "Mais de 2,5 golos", "Benfica vence por 2 ou mais".
+const ouTxt=(over,x,unit,who)=>who?`${who}: ${over?'mais':'menos'} de ${dec(x)} ${unit}`:`${over?'Mais':'Menos'} de ${dec(x)} ${unit}`;
+function hcpTxt(team,h){h=Number(h);
+  if(h===-.5)return`${team} vence`;
+  if(h===.5)return`${team} não perde`;
+  if(Math.abs(h%1)===.5)return h<0?`${team} vence por ${-h+.5} ou mais`:`${team} não perde por ${h+.5} ou mais`;
+  return`${team} (handicap ${h>0?'+':''}${dec(h)})`;
+}
+const ouP=(l,lines,unit='golos',who='')=>lines.flatMap(x=>[{pick:ouTxt(true,x,unit,who),p:over(l,x)},{pick:ouTxt(false,x,unit,who),p:1-over(l,x)}]);
+const hcpP=(m,f,lines)=>lines.flatMap(x=>[{pick:hcpTxt(f.home,x),p:sumM(m,(i,j)=>i-j+x>0)},{pick:hcpTxt(f.away,-x),p:sumM(m,(i,j)=>j-i-x>0)}]);
 const DEMO_MODEL={
- ft:(f,M)=>{const r=res(M.ft);return[{pick:f.home,p:r.h},{pick:'Empate',p:r.d},{pick:f.away,p:r.a}]},
- ht:(f,M)=>{const r=res(M.h1);return[{pick:f.home,p:r.h},{pick:'Empate',p:r.d},{pick:f.away,p:r.a}]},
- dc:(f,M)=>{const r=res(M.ft);return[{pick:`${f.home} ou Empate`,p:r.h+r.d},{pick:`${f.home} ou ${f.away}`,p:r.h+r.a},{pick:`Empate ou ${f.away}`,p:r.d+r.a}]},
- dnb:(f,M)=>{const r=res(M.ft);return[{pick:f.home,p:r.h/(r.h+r.a)},{pick:f.away,p:r.a/(r.h+r.a)}]},
- wbh:(f,M)=>{const a=res(M.h1),b=res(M.h2);return[{pick:f.home,p:a.h*b.h},{pick:f.away,p:a.a*b.a}]},
- btts:f=>{const p=(1-Math.exp(-f.lh))*(1-Math.exp(-f.la));return[{pick:'Sim',p},{pick:'Não',p:1-p}]},
- btts1:f=>{const p=(1-Math.exp(-f.lh*.45))*(1-Math.exp(-f.la*.45));return[{pick:'Sim',p},{pick:'Não',p:1-p}]},
+ ft:(f,M)=>{const r=res(M.ft);return[{pick:`${f.home} vence`,p:r.h},{pick:'Empate',p:r.d},{pick:`${f.away} vence`,p:r.a}]},
+ ht:(f,M)=>{const r=res(M.h1);return[{pick:`${f.home} ganha ao intervalo`,p:r.h},{pick:'Empate ao intervalo',p:r.d},{pick:`${f.away} ganha ao intervalo`,p:r.a}]},
+ dc:(f,M)=>{const r=res(M.ft);return[{pick:`${f.home} ou empate`,p:r.h+r.d},{pick:'Não há empate',p:r.h+r.a},{pick:`${f.away} ou empate`,p:r.d+r.a}]},
+ dnb:(f,M)=>{const r=res(M.ft);return[{pick:`${f.home} vence (empate devolve)`,p:r.h/(r.h+r.a)},{pick:`${f.away} vence (empate devolve)`,p:r.a/(r.h+r.a)}]},
+ wbh:(f,M)=>{const a=res(M.h1),b=res(M.h2);return[{pick:`${f.home} vence as duas partes`,p:a.h*b.h},{pick:`${f.away} vence as duas partes`,p:a.a*b.a}]},
+ btts:f=>{const p=(1-Math.exp(-f.lh))*(1-Math.exp(-f.la));return[{pick:'As duas equipas marcam',p},{pick:'Pelo menos uma não marca',p:1-p}]},
+ btts1:f=>{const p=(1-Math.exp(-f.lh*.45))*(1-Math.exp(-f.la*.45));return[{pick:'As duas marcam na 1.ª parte',p},{pick:'Pelo menos uma não marca na 1.ª parte',p:1-p}]},
  ou:f=>ouP(f.lh+f.la,[.5,1.5,2.5,3.5,4.5]),
- ou1:f=>ouP((f.lh+f.la)*.45,[.5,1.5,2.5]),
- ou2:f=>ouP((f.lh+f.la)*.55,[.5,1.5,2.5]),
- tgh:f=>ouP(f.lh,[.5,1.5,2.5],f.home+': '),
- tga:f=>ouP(f.la,[.5,1.5,2.5],f.away+': '),
+ ou1:f=>ouP((f.lh+f.la)*.45,[.5,1.5,2.5],'golos na 1.ª parte'),
+ ou2:f=>ouP((f.lh+f.la)*.55,[.5,1.5,2.5],'golos na 2.ª parte'),
+ tgh:f=>ouP(f.lh,[.5,1.5,2.5],'golos',f.home),
+ tga:f=>ouP(f.la,[.5,1.5,2.5],'golos',f.away),
  hcp:(f,M)=>hcpP(M.ft,f,[-1.5,-2.5]),
  hcp1:(f,M)=>hcpP(M.h1,f,[-.5,-1.5]),
  hcp2:(f,M)=>hcpP(M.h2,f,[-.5,-1.5]),
- cor:f=>ouP(f.corners,[7.5,8.5,9.5,10.5,11.5],'Cantos: '),
- sot:f=>ouP(2.6*(f.lh+f.la)+1.4,[5.5,6.5,7.5,8.5,9.5,10.5],'Remates à baliza: '),
- soth:f=>ouP(2.6*f.lh+.8,[2.5,3.5,4.5,5.5],f.home+': '),
- sota:f=>ouP(2.6*f.la+.7,[2.5,3.5,4.5,5.5],f.away+': ')
+ cor:f=>ouP(f.corners,[7.5,8.5,9.5,10.5,11.5],'cantos'),
+ sot:f=>ouP(2.6*(f.lh+f.la)+1.4,[5.5,6.5,7.5,8.5,9.5,10.5],'remates à baliza'),
+ soth:f=>ouP(2.6*f.lh+.8,[2.5,3.5,4.5,5.5],'remates à baliza',f.home),
+ sota:f=>ouP(2.6*f.la+.7,[2.5,3.5,4.5,5.5],'remates à baliza',f.away)
 };
 // No modo de exemplo há três casas fictícias com margens e erros diferentes, para a análise ter o que comparar.
 const DEMO_BOOKS=[['Casa Exemplo A',1.05],['Casa Exemplo B',1.07],['Casa Exemplo C',1.09]];
@@ -367,17 +390,13 @@ const MARKETS=[
 ].map(([id,g,n])=>({id,g,n}));
 const MK=Object.fromEntries(MARKETS.map(m=>[m.id,m]));
 const SHORT={ft:'Resultado',ou:'Golos',hcp:'Handicap',dc:'Dupla',btts:'Ambas marcam'};
-const PREFIX={tgh:f=>f.home+': ',tga:f=>f.away+': ',soth:f=>f.home+': ',sota:f=>f.away+': ',cor:()=>'Cantos: ',sot:()=>'Remates à baliza: '};
-
-// Traduz um valor da API ("Home", "Over" + linha, "Away" + handicap) para português.
+// Traduz um valor da API ("Home", "Over" + linha, "Away" + handicap) para uma frase simples.
 function translate(mid,s,f){
-  const v=String(s.v).trim();let out;
-  const simple={Home:f.home,Away:f.away,Draw:'Empate',Yes:'Sim',No:'Não'};
-  const dec=x=>String(x).replace('.',',');
-  if(/^(Over|Under)\b/i.test(v)){const line=v.replace(/^(Over|Under)\s*/i,'')||s.h||'';out=(/^over/i.test(v)?'Mais de ':'Menos de ')+dec(line)}
-  else if(simple[v]!==undefined){out=simple[v];if(s.h!=null&&/^hcp/.test(mid))out+=` ${Number(s.h)>0?'+':''}${dec(s.h)}`}
-  else out=v.replace(/\bHome\b/g,f.home).replace(/\bAway\b/g,f.away).replace(/\bDraw\b/g,'Empate');
-  return (PREFIX[mid]?PREFIX[mid](f):'')+out;
+  const v=String(s.v).trim(),team=v==='Home'?f.home:v==='Away'?f.away:null;
+  if(/^(Over|Under)\b/i.test(v)){const line=v.replace(/^(Over|Under)\s*/i,'')||s.h||'';return ouTxt(/^over/i.test(v),line,'golos')}
+  if(mid==='hcp'&&team&&s.h!=null)return hcpTxt(team,s.h);
+  if(mid==='ft')return team?`${team} vence`:v==='Draw'?'Empate':v;
+  return v.replace(/\bHome\b/g,f.home).replace(/\bAway\b/g,f.away).replace(/\bDraw\b/g,'Empate');
 }
 
 /* ---------- estado ---------- */
@@ -388,11 +407,16 @@ const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()+i*864e5);const 
     long:i===0?'Hoje':i===1?'Amanhã':d.toLocaleDateString('pt-PT',{...o,weekday:'long',day:'numeric',month:'short'}).replace('.','')}});
 const PRESETS=[{n:'Qualquer',min:1.1,max:10},{n:'Seguras',min:1.1,max:1.5},{n:'Equilibradas',min:1.5,max:2.5},{n:'Arriscadas',min:2.5,max:10}];
 const CRITERIA={
-  random:{n:'Ao calhas',d:'Combinações variadas dentro dos teus filtros.'},
-  prob:{n:'Prováveis',d:'Dá prioridade às seleções que o mercado acha mais prováveis.'},
-  value:{n:'Com valor',d:'Só seleções em que a odd paga acima da probabilidade estimada pelo mercado.'},
-  stats:{n:'Estatística',d:'Usa os golos e a forma das equipas esta época. Prefere seleções em que o modelo vê mais hipóteses do que o mercado.'}
+  prob:{n:'Mais seguras',d:'Maior hipótese de acertar, odds mais baixas.'},
+  stats:{n:'Pelos números',d:'Onde os resultados desta época dão mais hipóteses do que as casas.'},
+  value:{n:'Boas odds',d:'Só odds que pagam mais do que deviam.'},
+  random:{n:'Surpreende-me',d:'Combinações variadas, sem preferência.'}
 };
+// Hipótese de uma seleção: média entre casas de apostas e estatísticas, quando há as duas.
+const chance=l=>l.p!=null&&l.mp!=null?(l.p+l.mp)/2:(l.p??l.mp??null);
+const LEVELS=[[.7,'Muito provável','l5'],[.55,'Provável','l4'],[.4,'Equilibrado','l3'],[.25,'Arriscado','l2'],[0,'Muito arriscado','l1']];
+const level=p=>LEVELS.find(([t])=>p>=t);
+const goodOdd=l=>l.ev!=null&&l.ev>0;
 const S={tab:'gerar',source:'loading',notice:'',day:days[0].key,games:3,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
   target:{on:false,value:3,tol:.1},crit:store.get('crit','prob'),book:store.get('book','best'),
   showAll:false,dayData:{},oddsState:{},oddsHave:{},mk:{},quota:null,books:new Set(),stats:{},statsOff:'',
@@ -600,9 +624,9 @@ function noMultiMessage(r){
   if(r.short!=null){const n=r.short;
     if(S.crit==='stats'){
       if(S.statsOff)return`As estatísticas não estão disponíveis: ${S.statsOff}`;
-      return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} seleções em que o modelo vê mais hipóteses do que o mercado. Junta ligas, alarga os intervalos ou muda o critério.`:'O modelo não encontrou seleções acima do mercado nestes jogos. Há estatísticas para Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão.';
+      return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} seleções em que os números desta época dão mais hipóteses do que as casas. Junta ligas, alarga os intervalos ou escolhe outra forma de escolher os jogos.`:'Os números desta época não dão mais hipóteses do que as casas em nenhum destes jogos. Há estatísticas para Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão.';
     }
-    if(S.crit==='value')return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} seleções com valor dentro dos teus filtros. Junta ligas, alarga os intervalos ou muda o critério.`:`Nenhuma seleção destes jogos tem valor positivo dentro dos teus filtros. ${S.book!=='best'?'Escolhe "Melhor odd" nos Ajustes, junta':'Junta'} ligas, alarga os intervalos ou experimenta "Prováveis".`;
+    if(S.crit==='value')return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} seleções com boas odds dentro dos teus filtros. Junta ligas, alarga os intervalos ou escolhe outra forma de escolher os jogos.`:`Nenhuma seleção destes jogos tem boas odds dentro dos teus filtros. ${S.book!=='best'?'Escolhe "Melhor odd" nos Ajustes, junta':'Junta'} ligas, alarga os intervalos ou experimenta "Mais seguras".`;
     return n?`Só ${n} ${n===1?'jogo tem':'jogos têm'} odds dentro dos intervalos escolhidos. Alarga os intervalos, junta ligas ou baixa o número de jogos.`:'Nenhum jogo tem odds dentro dos intervalos escolhidos. Alarga os intervalos ou junta mercados.'}
   if(S.target.on&&r.bounds){const{lo,hi}=targetRange(),b=r.bounds;
     if(b.max<lo)return`Com ${S.games} jogos e estes filtros, a odd total vai no máximo até ${fmt(b.max)}. Junta jogos, sobe os máximos ou baixa o alvo.`;
@@ -659,21 +683,28 @@ const frm=s=>s?`<span class="frm" title="Últimos jogos, do mais recente para o 
 
 /* ---------- vistas ---------- */
 function ticket(m,i,savedView){
-  const isSaved=S.saved.some(s=>s.id===m.id);
-  return `<article class="tk">
-    <div class="tk-h"><div><small>${savedView?esc(dayLong(m.day)):'Multi '+(i+1)}</small><span class="t">${m.legs.length} seleções</span></div>
-      <div class="tk-odd"><small>Odd total</small><span class="big">${fmt(m.total)}</span></div></div>
-    ${m.prob!=null?`<div class="tk-stats"><span class="chip">Mercado <b>${pct(m.prob,m.prob<.1?1:0)}</b></span>${m.mprob!=null?`<span class="chip">Modelo <b>${pct(m.mprob,m.mprob<.1?1:0)}</b></span>`:''}${m.ev!=null?`<span class="chip ${m.ev>0?'good':''}">Valor <b>${sgn(m.ev)}</b></span>`:''}</div>
-      <div class="bar" aria-hidden="true"><i style="width:${Math.max(2,Math.min(100,m.prob*100))}%"></i></div>`:''}
-    <ol class="legs">${m.legs.map(l=>`<li class="leg"><time>${esc(l.time)}</time>
+  const isSaved=S.saved.some(s=>s.id===m.id),open=S.open?.has(m.id);
+  const cs=m.legs.map(chance),all=cs.every(c=>c!=null),tc=all?cs.reduce((a,c)=>a*c,1):null;
+  return `<article class="tk${open?' open':''}">
+    <div class="tk-h"><div><small>${savedView?esc(dayLong(m.day)):'Multi '+(i+1)}</small><span class="t">${m.legs.length} jogos</span></div>
+      <div class="tk-odd"><small>Odd</small><span class="big">${fmt(m.total)}</span></div></div>
+    ${tc!=null?`<div class="tk-chance"><span>Hipótese de acertar</span><b>${tc<.01?'menos de 1%':pct(tc)}</b><span class="bar" aria-hidden="true"><i style="width:${Math.max(2,Math.min(100,tc*100))}%"></i></span></div>`:''}
+    <ol class="legs">${m.legs.map(l=>{const c=chance(l),lv=c!=null?level(c):null;return`<li class="leg"><time>${esc(l.time)}</time>
       <span class="m">${esc(l.match)}</span><span class="o">${fmt(l.odd)}</span>
-      <span class="p">${esc(SHORT[l.mid]||l.market)} · <strong>${esc(l.pick)}</strong></span>
-      <span class="c"><span>${esc(l.league)}</span>${l.book?`<span>${esc(l.book)}</span>`:''}${l.p!=null?`<span>Mercado ${pct(l.p)}</span>`:''}${l.mp!=null?`<span class="mdl">Modelo ${pct(l.mp)}</span>`:''}${l.ev!=null?`<span class="${l.ev>0?'good':''}">Valor ${sgn(l.ev)}</span>`:''}${l.fh||l.fa?`<span>Forma ${frm(l.fh)} · ${frm(l.fa)}</span>`:''}</span></li>`).join('')}</ol>
+      <span class="p"><strong>${esc(l.pick)}</strong></span>
+      <span class="c">${lv?`<span class="lvl ${lv[2]}">${lv[1]}</span>`:''}${goodOdd(l)?'<span class="lvl good">Boa odd</span>':''}<span>${esc(l.league)}</span></span>
+      ${open?`<span class="det">${[
+        `${esc(l.market)}${l.book?` · ${esc(l.book)}`:''}`,
+        l.p!=null?`Casas de apostas: <b>${pct(l.p)}</b>`:'',
+        l.mp!=null?`Estatísticas: <b>${pct(l.mp)}</b>`:'',
+        l.ev!=null?`Odd ${l.ev>0?'acima':'abaixo'} do justo: <b>${sgn(l.ev)}</b>`:'',
+        l.fh||l.fa?`Forma ${frm(l.fh)} ${frm(l.fa)}`:''].filter(Boolean).map(x=>`<span>${x}</span>`).join('')}</span>`:''}</li>`}).join('')}</ol>
     <div class="tk-f">
       <label class="stake" for="stake-${m.id}"><input id="stake-${m.id}" type="number" min="0" step="0.5" inputmode="decimal" value="${m.stake}" data-stake="${m.id}" aria-label="Valor da aposta">€</label>
-      <span class="ret">Retorno<b data-ret="${m.id}">${fmt(m.stake*m.total)} €</b></span>
+      <span class="ret">Ganhas<b data-ret="${m.id}">${fmt(m.stake*m.total)} €</b></span>
       <span class="acts">${savedView?`<button class="btn warn" data-remove="${m.id}">Remover</button>`
-        :`<button class="btn" data-reroll="${i}">${I.redo}Outra</button><button class="btn ${isSaved?'on':''}" data-save="${m.id}" aria-pressed="${isSaved}">${I.save(isSaved)}${isSaved?'Guardada':'Guardar'}</button>`}</span>
+        :`<button class="btn" data-reroll="${i}" aria-label="Trocar por outra multi">${I.redo}Outra</button><button class="btn ${isSaved?'on':''}" data-save="${m.id}" aria-pressed="${isSaved}">${I.save(isSaved)}${isSaved?'Guardada':'Guardar'}</button>`}</span>
+      <button class="more-btn" data-detail="${m.id}" aria-expanded="${!!open}">${open?'Esconder análise':'Ver análise'}</button>
     </div></article>`;
 }
 function dayCountLabel(k){
@@ -700,13 +731,12 @@ function vGerar(){
   <div class="panel">
     <button class="row" data-open="leagues"><span class="ico${sel.length?' ok':''}">1</span><span class="rt"><b>Ligas</b><span>${sel.length?esc(sel.map(l=>l.n).join(', ')):todo('Escolhe as ligas')}</span></span><span class="rv">${sel.length?`${games} jogos`:''}${I.chev}</span></button>
     <button class="row" data-open="types"><span class="ico${S.types.length?' ok':''}">2</span><span class="rt"><b>Tipos de aposta</b><span>${S.types.length?esc(S.types.map(id=>MK[id].n).join(', ')):todo('Escolhe os tipos de aposta')}</span></span><span class="rv">${S.types.length}/6${I.chev}</span></button>
-    <button class="row" data-open="ranges" ${S.types.length?'':'disabled'}><span class="ico">3</span><span class="rt"><b>Odds de cada seleção <em class="opt">opcional</em></b><span>${S.types.length?esc(rangesTxt):'Escolhe primeiro os tipos de aposta'}</span></span><span class="rv">${I.chev}</span></button>
-    <div class="row"><span class="ico">4</span><span class="rt"><b>Jogos por multi</b><span>Seleções em cada bilhete</span></span>
+    <button class="row" data-open="ranges" ${S.types.length?'':'disabled'}><span class="ico">3</span><span class="rt"><b>Limitar odds <em class="opt">opcional</em></b><span>${S.types.length?esc(rangesTxt):'Escolhe primeiro os tipos de aposta'}</span></span><span class="rv">${I.chev}</span></button>
+    <div class="row"><span class="ico">4</span><span class="rt"><b>Jogos em cada multi</b><span>Quantos jogos entram no bilhete</span></span>
       <span class="stepper"><button data-games="-1" aria-label="Menos jogos" ${S.games<=2?'disabled':''}>−</button><output class="n">${S.games}</output><button data-games="1" aria-label="Mais jogos" ${S.games>=10?'disabled':''}>+</button></span></div>
-    <button class="row" data-open="target"><span class="ico">5</span><span class="rt"><b>Odd total <em class="opt">opcional</em></b><span>${S.target.on?`Entre ${fmt(targetRange().lo)} e ${fmt(targetRange().hi)}`:'Livre'}</span></span><span class="rv">${S.target.on?`≈ ${fmt(S.target.value)}`:''}${I.chev}</span></button>
-    <div class="critrow"><div class="lbl">Critério</div>
-      <div class="seg" role="group" aria-label="Critério">${Object.entries(CRITERIA).map(([k,c])=>`<button data-crit="${k}" aria-pressed="${S.crit===k}">${c.n}</button>`).join('')}</div>
-      <p class="seg-note">${CRITERIA[S.crit].d}</p></div>
+    <button class="row" data-open="target"><span class="ico">5</span><span class="rt"><b>Odd final <em class="opt">opcional</em></b><span>${S.target.on?`Entre ${fmt(targetRange().lo)} e ${fmt(targetRange().hi)}`:'Qualquer'}</span></span><span class="rv">${S.target.on?`≈ ${fmt(S.target.value)}`:''}${I.chev}</span></button>
+    <div class="critrow"><div class="lbl">Como escolher os jogos</div>
+      <div class="crit" role="group" aria-label="Como escolher os jogos">${Object.entries(CRITERIA).map(([k,c])=>`<button data-crit="${k}" aria-pressed="${S.crit===k}"><b>${c.n}</b><span>${c.d}</span></button>`).join('')}</div></div>
   </div>
   ${S.err?`<div class="alert" role="alert">${esc(S.err)}</div>`:''}
   <div id="results">${S.results.length?`<div class="res-h"><h2>As tuas multis</h2><span>${esc(dayLong(S.day))}</span></div><div class="tks">${S.results.map((m,i)=>ticket(m,i,false)).join('')}</div>`:''}</div>`;
@@ -721,7 +751,7 @@ function vJogos(){
     ${isDemo()||st==='ok'?'':`<button class="btn" data-loadodds="${l.id}" ${st==='loading'?'disabled':''}>${st==='loading'?SPIN:''}${st==='error'?'Tentar de novo':'Ver odds'}</button>`}</div>
     ${fx.filter(f=>f.lg.id===l.id).map(f=>{const s=selections(f,'ft');const o=k=>{const x=s.find(x=>x.pick===k);return x?`${fmt(x.odd)}<em>${pct(x.p)}</em>`:'–<em>&nbsp;</em>'};return`<div class="g"><time>${esc(f.time)}</time>
     <div class="tm"><div>${esc(f.home)}${frm(modelOf(f)?.fh)}</div><div>${esc(f.away)}${frm(modelOf(f)?.fa)}</div></div>
-    <div class="x3"><span>${o(f.home)}</span><span>${o('Empate')}</span><span>${o(f.away)}</span></div></div>`}).join('')}</div>`}).join('')
+    <div class="x3"><span>${o(f.home+' vence')}</span><span>${o('Empate')}</span><span>${o(f.away+' vence')}</span></div></div>`}).join('')}</div>`}).join('')
   :(S.dayData[S.day]?.status==='ok'||isDemo()?'<div class="empty"><strong>Sem jogos</strong>Não há jogos por começar nas ligas em destaque neste dia.</div>':'')}
   ${!isDemo()&&S.dayData[S.day]?.status==='ok'?`<button class="more" data-act="toggleall">${S.showAll?'Mostrar só as ligas em destaque':'Mostrar todas as ligas'}</button>`:''}`;
 }
@@ -746,11 +776,11 @@ function vAjustes(){
     ${S.confirmDel?`<span class="acts"><button class="btn" data-act="delno">Cancelar</button><button class="btn warn" data-act="delyes">Apagar</button></span>`
       :`<button class="btn warn" data-act="delask" ${S.saved.length?'':'disabled'}>Apagar todas</button>`}</div></div>
   ${!isDemo()&&!books.length?'<p class="note">A lista de casas aparece depois de carregares odds pela primeira vez.</p>':''}
-  <div class="explain"><h3>Como se calcula a probabilidade</h3>
-    <p>Cada casa de apostas mete uma margem nas odds. A app tira essa margem e fica com a probabilidade que o mercado atribui a cada resultado. Usa a Pinnacle, que tem a margem mais baixa, quando existe; senão, a mediana das casas.</p>
-    <p><b>Valor</b> é quanto a odd paga acima dessa probabilidade. Valor positivo não garante que a aposta ganha; diz que, a longo prazo, a odd é mais justa do que o habitual.</p>
-    <p><b>Modelo</b> é a estimativa da app com base nos golos marcados e sofridos esta época, em casa e fora, com mais peso nos jogos recentes. Funciona para Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão. Não sabe de lesões, castigos nem motivação; o mercado sabe.</p>
-    <p>A probabilidade de uma multi assume que os jogos são independentes.</p></div>
+  <div class="explain"><h3>O que querem dizer as etiquetas</h3>
+    <p><b>Muito provável, Provável, Equilibrado, Arriscado</b>: a hipótese de cada seleção acontecer. Vem das odds de várias casas de apostas e, nas principais ligas, também dos resultados desta época.</p>
+    <p><b>Boa odd</b>: a casa paga mais do que devia por essa seleção. Não quer dizer que vá acontecer; quer dizer que a odd é justa ou melhor.</p>
+    <p><b>Ver análise</b>, em cada multi, mostra os números por trás: o que dizem as casas, o que dizem as estatísticas e a forma das equipas (V vitória, E empate, D derrota, do jogo mais recente para o mais antigo).</p>
+    <p>As estatísticas existem para Primeira Liga, Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie e Brasileirão. Não sabem de lesões nem castigos; as casas de apostas sabem.</p></div>
   <p class="note">${isDemo()?'Os jogos e as odds são de exemplo. ':'Odds pré-jogo da The Odds API; podem mudar até ao início do jogo. Confirma sempre na casa de apostas. '}18+ · Joga com responsabilidade.</p>`;
 }
 function render(){
@@ -770,7 +800,7 @@ function render(){
 /* ---------- folhas ---------- */
 let draft=null;
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'');
-const SHEETS={leagues:'Ligas',types:'Tipos de aposta',ranges:'Odds de cada seleção',target:'Odd total'};
+const SHEETS={leagues:'Ligas',types:'Tipos de aposta',ranges:'Limitar odds',target:'Odd final'};
 function openSheet(kind){
   draft=kind==='leagues'?new Set(S.leagues):kind==='types'?S.types.slice():null;
   const el=document.getElementById('sheet');el.hidden=false;el.dataset.kind=kind;
@@ -816,8 +846,8 @@ function drawSheet(){
     document.getElementById('sfmeta').textContent='Opcional. Se não mexeres, vale qualquer odd.';
   }else if(kind==='target'){
     const{lo,hi}=targetRange();
-    list.innerHTML=`<div class="tgl"><span><b>Escolher a odd total</b><small>Desligado, cada multi fica com a odd que calhar.</small></span>
-      <button class="switch" data-act="target" role="switch" aria-checked="${S.target.on}" aria-label="Escolher a odd total"><span></span></button></div>
+    list.innerHTML=`<div class="tgl"><span><b>Escolher a odd final</b><small>Desligado, cada multi fica com a odd que calhar.</small></span>
+      <button class="switch" data-act="target" role="switch" aria-checked="${S.target.on}" aria-label="Escolher a odd final"><span></span></button></div>
       ${S.target.on?`<label class="tv" for="tval">Quero perto de<input id="tval" type="number" step="0.1" min="1.01" inputmode="decimal" value="${S.target.value}"></label>
       <div class="pre" role="group" aria-label="Margem">${[[.05,'Apertada ±5%'],[.1,'Normal ±10%'],[.2,'Larga ±20%']].map(([t,n])=>`<button data-tol="${t}" aria-pressed="${S.target.tol===t}">${n}</button>`).join('')}</div>`:''}`;
     document.getElementById('sfmeta').innerHTML=S.target.on?(S.target.value>=1.01?`Multis entre <b>${fmt(lo)}</b> e <b>${fmt(hi)}</b>`:'Escreve uma odd maior que 1.'):'';
@@ -833,6 +863,7 @@ document.addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   const d=t.dataset;
   if(d.tab){S.tab=d.tab;S.confirmDel=false;S.err='';render();window.scrollTo(0,0);if(d.tab==='ajustes'&&!isDemo())loadQuota();return}
+  if(d.detail){S.open??=new Set();S.open.has(d.detail)?S.open.delete(d.detail):S.open.add(d.detail);render();return}
   if(d.day){setDay(d.day);return}
   if('retryday' in d){ensureDay(S.day,true);return}
   if(d.games){S.games=Math.min(10,Math.max(2,S.games+ +d.games));render();return}
