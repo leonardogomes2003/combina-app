@@ -7,12 +7,21 @@ Gera multis de futebol a partir das ligas, dos tipos de aposta e dos intervalos 
 ```
 public/index.html   a app (HTML, CSS e JS num só ficheiro, instalável no telemóvel)
 api/events.js       GET /api/events?date=AAAA-MM-DD[&all=1]           jogos por começar nesse dia (grátis)
-api/odds.js         GET /api/odds?date=…&league=soccer_epl&markets=ft,ou,hcp   odds de uma liga nesse dia
+api/odds.js         GET /api/odds?date=…&league=soccer_epl&markets=ft,ou,hcp   odds de uma liga nesse dia, com a leitura do mercado
 api/status.js       GET /api/status                                    créditos que faltam (grátis)
 lib/oddsApi.js      cliente da The Odds API, datas de Lisboa, erros e cache
 ```
 
 A chave da API só existe no servidor (variável de ambiente). O browser nunca a vê.
+
+## Leitura do mercado
+
+Para cada seleção, `api/odds.js` junta as odds de todas as casas e calcula a probabilidade estimada: tira a margem às odds de cada casa e usa a Pinnacle (margem mais baixa) quando existe, ou a mediana das casas. Na app:
+
+- **Probabilidade** de cada seleção e da multi (assumindo jogos independentes).
+- **Valor** = odd × probabilidade − 1. Positivo quer dizer que a odd paga acima do que o mercado estima.
+- **Critério** de geração: *Ao calhas*, *Prováveis* (prioridade às seleções mais prováveis) ou *Com valor* (só seleções com valor positivo).
+- Nos Ajustes escolhes a casa de onde vem a odd, ou *Melhor odd* (a mais alta entre as casas).
 
 ## Créditos (plano grátis: 500 por mês)
 

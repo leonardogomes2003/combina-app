@@ -89,12 +89,37 @@ assert.equal(r.status, 200, JSON.stringify(r.json));
 assert.match(calls[0], /markets=h2h%2Ctotals%2Cspreads/, 'dc não é pedido (não existe no plano grátis)');
 if (r.json.fixtures.length) {
   const m = r.json.fixtures[0].markets;
-  assert.equal(m.ft.book, 'Betclic', 'Betclic tem prioridade');
-  assert.deepEqual(m.ft.sel.map((s) => s.v), ['Home', 'Draw', 'Away']);
-  assert.deepEqual(m.ou.sel[0], { v: 'Over', h: 2.5, o: 1.8 });
-  assert.equal(m.hcp.book, 'Pinnacle', 'cai para a seguinte quando a preferida não tem o mercado');
-  assert.equal(m.hcp.sel[0].h, -1.5);
+  const home = m.ft.sel.find((x) => x.v === 'Home');
+  assert.deepEqual(m.ft.sel.map((x) => x.v).sort(), ['Away', 'Draw', 'Home']);
+  assert.deepEqual(Object.keys(home.odds).sort(), ['Betclic', 'Pinnacle'], 'odds de todas as casas');
+  assert.equal(home.src, 'pinnacle');
+  assert.equal(home.n, 2);
+  const imp = [1.4, 4.5, 7].map((o) => 1 / (o * 1.05));
+  assert.ok(Math.abs(home.p - imp[0] / imp.reduce((a, b) => a + b)) < 1e-3, 'probabilidade sem margem da Pinnacle');
+  const sum = m.ft.sel.reduce((a, x) => a + x.p, 0);
+  assert.ok(Math.abs(sum - 1) < 1e-3, '1X2 soma 100%');
+  const over = m.ou.sel.find((x) => x.v === 'Over');
+  assert.equal(over.h, 2.5);
+  assert.ok(Math.abs(over.p + m.ou.sel.find((x) => x.v === 'Under').p - 1) < 1e-3);
+  const hh = m.hcp.sel.find((x) => x.v === 'Home');
+  assert.equal(hh.h, -1.5);
+  assert.deepEqual(Object.keys(hh.odds), ['Pinnacle'], 'Betclic não tem handicap no mock');
   assert.equal(r.json.quota.remaining, 480);
+}
+
+// consenso (sem Pinnacle): mediana das casas
+{
+  const { analyse } = await import('../api/odds.js');
+  const e = { home_team: 'A', away_team: 'B', bookmakers: [
+    { key: 'x', title: 'X', markets: [{ key: 'totals', outcomes: [{ name: 'Over', point: 2.5, price: 2 }, { name: 'Under', point: 2.5, price: 1.8 }, { name: 'Over', point: 3.5, price: 3 }] }] },
+    { key: 'y', title: 'Y', markets: [{ key: 'totals', outcomes: [{ name: 'Over', point: 2.5, price: 1.9 }, { name: 'Under', point: 2.5, price: 1.9 }] }] },
+  ] };
+  const mk = analyse(e).ou.sel;
+  assert.equal(mk.length, 2, 'linha 3.5 incompleta fica de fora');
+  const o = mk.find((x) => x.v === 'Over');
+  assert.equal(o.src, 'consenso');
+  const px = (1 / 2) / (1 / 2 + 1 / 1.8), py = 0.5;
+  assert.ok(Math.abs(o.p - (px + py) / 2) < 1e-3);
 }
 
 // status
