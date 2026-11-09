@@ -168,6 +168,46 @@ h1 em{font-style:normal;color:var(--blue)}
 .x3 em{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:600}
 .empty{background:var(--card);border:1px dashed var(--line2);border-radius:20px;padding:34px 20px;text-align:center;color:var(--muted)}
 .empty strong{display:block;color:var(--fg);font-family:var(--display);font-weight:800;font-size:24px;text-transform:uppercase;margin-bottom:4px}
+.lead{color:var(--muted);margin:-6px 0 16px;max-width:60ch}
+.gb{width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;font:inherit;color:inherit;grid-template-columns:42px minmax(0,1fr) auto}
+.gb:hover{background:rgba(255,255,255,.02)}
+.gb .tm{display:grid}
+.gb .tm>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav{display:grid;grid-template-columns:auto auto;align-items:center;gap:0 6px;text-align:right;font-size:13px}
+.fav small{grid-column:1;color:var(--dim);font-size:11px}
+.fav b{grid-column:1;font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav em{grid-column:1;font-style:normal;color:var(--blue2);font-weight:600}
+.fav svg{grid-column:2;grid-row:1/4;color:var(--dim)}
+.pinned{grid-column:2/4;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--good);font-weight:600}
+.pinned svg{width:13px;height:13px}
+.st-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-family:var(--display);font-weight:800;font-size:28px;line-height:1.05;text-transform:uppercase;margin:0 0 14px}
+.st-head em{font-style:normal;color:var(--blue);font-size:18px}
+.st-sec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.st-sec h3{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.say{margin:0;padding:0 0 0 18px;display:grid;gap:6px;color:var(--muted)}
+.say b{color:var(--fg)}
+.warnbox{margin:10px 0 0;background:rgba(255,207,92,.1);color:var(--warn);border-radius:10px;padding:9px 11px;font-size:13px}
+.cmp{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.cmp th,.cmp td{padding:7px 4px;border-top:1px solid var(--line);text-align:right}
+.cmp thead th{border-top:0;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.cmp tbody th{text-align:left;font-weight:500;color:var(--muted)}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.teams>div{display:grid;gap:4px;align-content:start;min-width:0}
+.teams b{font-weight:600}
+.teams .frm{margin:0}
+.teams span{font-size:13px;color:var(--muted)}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.mrow .mp{display:grid;gap:4px}
+.mrow .mp b{font-weight:600}
+.mrow .mp>span{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.mrow .bk{font-size:11px;color:var(--dim)}
+.mrow .mo{font-family:var(--display);font-weight:800;font-size:22px}
+.row.pins{align-items:flex-start}
+.pinl{display:flex!important;flex-wrap:wrap;gap:6px;white-space:normal!important;margin-top:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line2);border-radius:999px;padding:3px 4px 3px 10px;font-size:12px;color:var(--fg)}
+.pill button{width:20px;height:20px;border-radius:50%;border:0;background:var(--card3);display:grid;place-items:center;padding:0}
+.pill svg{width:10px;height:10px}
+@media (max-width:420px){.teams{grid-template-columns:1fr}}
 .more{width:100%;margin-top:4px;border:1px dashed var(--line2);background:none;border-radius:16px;padding:12px;color:var(--blue2);font-weight:600}
 
 /* ajustes */
@@ -266,7 +306,7 @@ nav.tabs button[aria-current="page"] svg{color:var(--blue)}
 <div class="genbar" id="genbar"></div>
 <nav class="tabs" aria-label="Navegação"><div class="tabs-in">
   <button data-tab="gerar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Gerar</button>
-  <button data-tab="jogos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 4.5h-5L8 10z"/></svg>Jogos</button>
+  <button data-tab="jogos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Estudo</button>
   <button data-tab="multis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a3 3 0 0 0 0 6v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3a3 3 0 0 0 0-6z"/></svg>Guardadas</button>
   <button data-tab="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
 </div></nav>
@@ -417,7 +457,7 @@ const chance=l=>l.p!=null&&l.mp!=null?(l.p+l.mp)/2:(l.p??l.mp??null);
 const LEVELS=[[.7,'Muito provável','l5'],[.55,'Provável','l4'],[.4,'Equilibrado','l3'],[.25,'Arriscado','l2'],[0,'Muito arriscado','l1']];
 const level=p=>LEVELS.find(([t])=>p>=t);
 const goodOdd=l=>l.ev!=null&&l.ev>0;
-const S={tab:'gerar',source:'loading',notice:'',day:days[0].key,games:3,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
+const S={pins:new Map(),tab:'gerar',source:'loading',notice:'',day:days[0].key,games:3,leagues:new Set(),types:[],ranges:{},results:[],err:'',busy:false,
   target:{on:false,value:3,tol:.1},crit:store.get('crit','prob'),book:store.get('book','best'),
   showAll:false,dayData:{},oddsState:{},oddsHave:{},mk:{},quota:null,books:new Set(),stats:{},statsOff:'',
   saved:store.get('saved',[]),stake:store.get('stake',5),perRun:store.get('perRun',3)};
@@ -581,9 +621,19 @@ const pickTop=(list,score,k=3)=>{const r=list.map(s=>({s,v:score(s)})).sort((a,b
 const maxP=c=>Math.max(...c.sel.map(s=>s.p??0));
 // Procura até `count` multis novas (fora de `taken`). Cada multi é a melhor pelo critério entre muitas tentativas,
 // e os jogos já usados nas anteriores perdem prioridade, para os bilhetes não saírem todos iguais.
+// Seleções fixadas no Estudo de mercado: entram sempre, sem filtros.
+function pinnedCands(fixtures){
+  const out=[];
+  for(const[fid,pin]of S.pins){const f=fixtures.find(x=>String(x.id)===fid);if(!f)continue;
+    const s=selections(f,pin.mid).find(x=>x.pick===pin.pick);if(s)out.push({f,sel:[{...s,mid:pin.mid}]})}
+  return out;
+}
 function search(fixtures,count,taken){
-  const cands=fixtures.map(f=>({f,sel:candidates(f)})).filter(c=>c.sel.length);
-  if(cands.length<S.games)return{multis:[],short:cands.length};
+  const pinned=pinnedCands(fixtures),pinIds=new Set(pinned.map(c=>c.f.id));
+  const need=S.games-pinned.length;
+  if(need<0)return{multis:[],tooMany:pinned.length};
+  const cands=fixtures.filter(f=>!pinIds.has(f.id)).map(f=>({f,sel:candidates(f)})).filter(c=>c.sel.length);
+  if(cands.length<need)return{multis:[],short:cands.length};
   const T=Math.log(S.target.value),{lo,hi}=targetRange();
   const usage=new Map(),out=[];let best=null;
   const used=c=>usage.get(c.f.id)||0;
@@ -594,7 +644,7 @@ function search(fixtures,count,taken){
   for(let n=0;n<count;n++){
     let pick1=null;const want=S.crit==='random'&&!S.target.on?1:40;let seen=0;
     for(let attempt=0;attempt<1500&&seen<want;attempt++){
-      const pick=(S.crit==='random'?shuffle(cands).sort((a,b)=>used(a)-used(b)):order()).slice(0,S.games);let chosen;
+      const pick=[...pinned,...(S.crit==='random'?shuffle(cands).sort((a,b)=>used(a)-used(b)):order()).slice(0,need)];let chosen;
       if(S.target.on){
         let acc=0;chosen=[];
         pick.forEach((c,i)=>{const ideal=(T-acc)/(pick.length-i);
@@ -618,9 +668,10 @@ function search(fixtures,count,taken){
     out.push(pick1);taken.add(pick1.sig);
     for(const l of pick1.legs)usage.set(l.fx,(usage.get(l.fx)||0)+1);
   }
-  return{multis:out,best,bounds:oddBounds(cands)};
+  return{multis:out,best,bounds:oddBounds([...pinned,...cands])};
 }
 function noMultiMessage(r){
+  if(r.tooMany)return`Fixaste ${r.tooMany} seleções, mas cada multi tem ${S.games} jogos. Sobe o número de jogos ou retira uma seleção fixada.`;
   if(r.short!=null){const n=r.short;
     if(S.crit==='stats'){
       if(S.statsOff)return`As estatísticas não estão disponíveis: ${S.statsOff}`;
@@ -668,6 +719,7 @@ async function generate(scroll=true){
 const I={
   chev:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>',
   x:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 5 3 3H7l3-3zM12 12v8"/></svg>',
   bolt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
   trophy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8"/></svg>',
   list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>',
@@ -735,25 +787,42 @@ function vGerar(){
     <div class="row"><span class="ico">4</span><span class="rt"><b>Jogos em cada multi</b><span>Quantos jogos entram no bilhete</span></span>
       <span class="stepper"><button data-games="-1" aria-label="Menos jogos" ${S.games<=2?'disabled':''}>−</button><output class="n">${S.games}</output><button data-games="1" aria-label="Mais jogos" ${S.games>=10?'disabled':''}>+</button></span></div>
     <button class="row" data-open="target"><span class="ico">5</span><span class="rt"><b>Odd final <em class="opt">opcional</em></b><span>${S.target.on?`Entre ${fmt(targetRange().lo)} e ${fmt(targetRange().hi)}`:'Qualquer'}</span></span><span class="rv">${S.target.on?`≈ ${fmt(S.target.value)}`:''}${I.chev}</span></button>
+    ${S.pins.size?`<div class="row pins"><span class="ico ok">${I.pin}</span><span class="rt"><b>Fixadas no estudo</b><span class="pinl">${[...S.pins].map(([fid,p])=>`<span class="pill">${esc(p.pick)}<button data-unpin="${esc(fid)}" aria-label="Retirar ${esc(p.pick)}">${I.x}</button></span>`).join('')}</span></span></div>`:''}
     <div class="critrow"><div class="lbl">Como escolher os jogos</div>
       <div class="crit" role="group" aria-label="Como escolher os jogos">${Object.entries(CRITERIA).map(([k,c])=>`<button data-crit="${k}" aria-pressed="${S.crit===k}"><b>${c.n}</b><span>${c.d}</span></button>`).join('')}</div></div>
   </div>
   ${S.err?`<div class="alert" role="alert">${esc(S.err)}</div>`:''}
   <div id="results">${S.results.length?`<div class="res-h"><h2>As tuas multis</h2><span>${esc(dayLong(S.day))}</span></div><div class="tks">${S.results.map((m,i)=>ticket(m,i,false)).join('')}</div>`:''}</div>`;
 }
+// Ligas do estudo: as que têm estatísticas (no modo de exemplo, todas).
+const studyLeague=l=>isDemo()||STATS_LEAGUES.has(l.id);
+function studyFav(f){
+  const md=modelOf(f);let pr=null;
+  const ft=selections(f,'ft');
+  const pm=k=>ft.find(x=>x.pick===k)?.p;
+  const mk=pm(f.home+' vence')!=null?{h:pm(f.home+' vence'),d:pm('Empate'),a:pm(f.away+' vence')}:null;
+  const ms=md?res(md._m??=matrix(md.lh,md.la)):null;
+  if(mk&&ms)pr={h:(mk.h+ms.h)/2,d:(mk.d+ms.d)/2,a:(mk.a+ms.a)/2};else pr=mk||ms;
+  if(!pr)return null;
+  const top=[['h',f.home],['a',f.away]].sort((x,y)=>pr[y[0]]-pr[x[0]])[0];
+  return pr[top[0]]<.45?{t:'Equilibrado',p:null}:{t:top[1],p:pr[top[0]]};
+}
 function vJogos(){
-  const ls=leaguesFor(S.day).filter(l=>isDemo()||l.curated||S.showAll);
-  const fx=fixturesFor(S.day);
-  return `${S.notice?`<div class="notice">${esc(S.notice)}</div>`:''}<h1>Jogos <em>do dia</em></h1>
+  const all=leaguesFor(S.day),ls=all.filter(l=>studyLeague(l)||S.showOthers);
+  const fx=fixturesFor(S.day);const names=isDemo()?DEMO_LEAGUES.map(l=>l.n):[...STATS_LEAGUES].sort((a,b)=>(CUR.get(a)?.order??99)-(CUR.get(b)?.order??99)).map(id=>CUR.get(id)?.n||'Championship');
+  const loaded=isDemo()||S.dayData[S.day]?.status==='ok';
+  const need=loaded&&!isDemo()&&!S.statsOff?ls.filter(l=>studyLeague(l)&&!S.stats[l.id]).map(l=>l.id):[];
+  if(need.length)ensureStats(need).then(()=>{if(S.tab==='jogos'&&document.getElementById('sheet').hidden)renderSoft()});
+  return `${S.notice?`<div class="notice">${esc(S.notice)}</div>`:''}<h1>Estudo <em>de mercado</em></h1>
+  <p class="lead">Para as ligas ${esc(names.slice(0,-1).join(', '))} e ${esc(names.at(-1))}. Toca num jogo para veres o estudo.</p>
   ${dayStrip()}${dayProblem()}
   ${S.err&&S.tab==='jogos'?`<div class="alert" role="alert" style="margin:0 0 14px">${esc(S.err)}</div>`:''}
-  ${ls.length?ls.map(l=>{const st=S.oddsHave[S.day+'|'+l.id]?.has('ft')?'ok':S.oddsState[S.day+'|'+l.id];return`<div class="lg"><div class="lg-h"><span class="cc">${esc(l.cc)}</span><b>${esc(l.n)}</b>
-    ${isDemo()||st==='ok'?'':`<button class="btn" data-loadodds="${l.id}" ${st==='loading'?'disabled':''}>${st==='loading'?SPIN:''}${st==='error'?'Tentar de novo':'Ver odds'}</button>`}</div>
-    ${fx.filter(f=>f.lg.id===l.id).map(f=>{const s=selections(f,'ft');const o=k=>{const x=s.find(x=>x.pick===k);return x?`${fmt(x.odd)}<em>${pct(x.p)}</em>`:'–<em>&nbsp;</em>'};return`<div class="g"><time>${esc(f.time)}</time>
-    <div class="tm"><div>${esc(f.home)}${frm(modelOf(f)?.fh)}</div><div>${esc(f.away)}${frm(modelOf(f)?.fa)}</div></div>
-    <div class="x3"><span>${o(f.home+' vence')}</span><span>${o('Empate')}</span><span>${o(f.away+' vence')}</span></div></div>`}).join('')}</div>`}).join('')
-  :(S.dayData[S.day]?.status==='ok'||isDemo()?'<div class="empty"><strong>Sem jogos</strong>Não há jogos por começar nas ligas em destaque neste dia.</div>':'')}
-  ${!isDemo()&&S.dayData[S.day]?.status==='ok'?`<button class="more" data-act="toggleall">${S.showAll?'Mostrar só as ligas em destaque':'Mostrar todas as ligas'}</button>`:''}`;
+  ${ls.length?ls.map(l=>`<div class="lg"><div class="lg-h"><span class="cc">${esc(l.cc)}</span><b>${esc(l.n)}</b>${studyLeague(l)?'':'<span class="opt">só casas de apostas</span>'}</div>
+    ${fx.filter(f=>f.lg.id===l.id).map(f=>{const fav=studyFav(f),md=modelOf(f);return`<button class="g gb" data-study="${esc(String(f.id))}"><time>${esc(f.time)}</time>
+    <span class="tm"><span>${esc(f.home)}${frm(md?.fh)}</span><span>${esc(f.away)}${frm(md?.fa)}</span></span>
+    <span class="fav">${fav?(fav.p!=null?`<small>Favorito</small><b>${esc(fav.t)}</b><em>${pct(fav.p)}</em>`:`<b>Equilibrado</b>`):'<small>Ver estudo</small>'}${I.chev}</span>${S.pins.has(String(f.id))?`<span class="pinned">${I.pin}Fixada: ${esc(S.pins.get(String(f.id)).pick)}</span>`:''}</button>`}).join('')}</div>`).join('')
+  :(loaded?`<div class="empty"><strong>Sem jogos</strong>${esc(dayLong(S.day).replace(/^./,c=>c.toUpperCase()))} não há jogos por começar nestas ligas. Escolhe outro dia no calendário.</div>`:'')}
+  ${!isDemo()&&loaded&&all.some(l=>!studyLeague(l))?`<button class="more" data-act="toggleothers">${S.showOthers?'Esconder as outras ligas':`Ver também outras ligas (${all.filter(l=>!studyLeague(l)).reduce((a,l)=>a+l.count,0)} jogos, só com casas de apostas)`}</button>`:''}`;
 }
 function vMultis(){
   return `<h1>Multis <em>guardadas</em></h1>`+(S.saved.length?`<div class="tks">${S.saved.map((m,i)=>ticket(m,i,true)).join('')}</div>`
@@ -800,10 +869,10 @@ function render(){
 /* ---------- folhas ---------- */
 let draft=null;
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'');
-const SHEETS={leagues:'Ligas',types:'Tipos de aposta',ranges:'Limitar odds',target:'Odd final'};
-function openSheet(kind){
+const SHEETS={leagues:'Ligas',types:'Tipos de aposta',ranges:'Limitar odds',target:'Odd final',game:'Estudo do jogo'};
+function openSheet(kind,arg){
   draft=kind==='leagues'?new Set(S.leagues):kind==='types'?S.types.slice():null;
-  const el=document.getElementById('sheet');el.hidden=false;el.dataset.kind=kind;
+  const el=document.getElementById('sheet');el.hidden=false;el.dataset.kind=kind;el.dataset.arg=arg||'';
   const searchable=kind==='leagues'||kind==='types';
   el.innerHTML=`<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-modal="true" aria-label="${SHEETS[kind]}"><div class="grab"></div>
   <div class="sh"><h2>${SHEETS[kind]}</h2><button data-close aria-label="Fechar">${I.x}</button></div>
@@ -844,6 +913,10 @@ function drawSheet(){
       <label for="max-${mid}">Máx<input id="max-${mid}" type="number" step="0.05" min="1.01" inputmode="decimal" value="${r.max}" data-range="${mid}" data-k="max"></label></div>
       <div class="pre">${PRESETS.map((p,pi)=>`<button data-preset="${mid}:${pi}" aria-pressed="${r.min===p.min&&r.max===p.max}">${p.n}${pi?` ${fmt(p.min)}–${fmt(p.max)}`:''}</button>`).join('')}</div></div>`}).join('');
     document.getElementById('sfmeta').textContent='Opcional. Se não mexeres, vale qualquer odd.';
+  }else if(kind==='game'){
+    const f=fixturesFor(S.day).find(x=>String(x.id)===el.dataset.arg);
+    list.innerHTML=f?studyHTML(f):'<p class="hint">Este jogo já não está na lista.</p>';
+    document.getElementById('sfmeta').textContent=f?`${f.lg.n} · ${dayLong(S.day)} às ${f.time}`:'';
   }else if(kind==='target'){
     const{lo,hi}=targetRange();
     list.innerHTML=`<div class="tgl"><span><b>Escolher a odd final</b><small>Desligado, cada multi fica com a odd que calhar.</small></span>
@@ -853,16 +926,76 @@ function drawSheet(){
     document.getElementById('sfmeta').innerHTML=S.target.on?(S.target.value>=1.01?`Multis entre <b>${fmt(lo)}</b> e <b>${fmt(hi)}</b>`:'Escreve uma odd maior que 1.'):'';
   }
 }
+/* ---------- estudo de um jogo ---------- */
+// Golos esperados a partir da odd de "mais de 2,5" (o valor de lambda que dá essa probabilidade).
+function lambdaFromOver(p){let lo=.2,hi=7;for(let i=0;i<40;i++){const m=(lo+hi)/2;over(m,2.5)<p?lo=m:hi=m}return(lo+hi)/2}
+async function loadStudy(f){
+  if(isDemo())return;
+  const key=S.day+'|'+f.lg.id;S.studyErr='';
+  try{await ensureOdds(S.day,[f.lg.id],['ft','ou','hcp'].filter(apiSupports));await ensureStats([f.lg.id])}
+  catch(e){S.studyErr=e.message}
+  drawSheet();
+}
+function studyHTML(f){
+  if(!isDemo()&&!['ft','ou','hcp'].every(m=>S.oddsHave[S.day+'|'+f.lg.id]?.has(m))&&!S.studyErr)return`<p class="hint">${SPIN}A preparar o estudo…</p>`;
+  const md=modelOf(f),M=md?(md._m??=matrix(md.lh,md.la)):null,ms=M?res(M):null;
+  const sel=mid=>selections(f,mid);
+  const pk=(mid,t)=>sel(mid).find(x=>x.pick===t);
+  const mk={h:pk('ft',f.home+' vence')?.p,d:pk('ft','Empate')?.p,a:pk('ft',f.away+' vence')?.p};
+  const has=mk.h!=null,blend=(a,b)=>a!=null&&b!=null?(a+b)/2:(a??b??null);
+  const pr={h:blend(mk.h,ms?.h),d:blend(mk.d,ms?.d),a:blend(mk.a,ms?.a)};
+  const o25m=pk('ou','Mais de 2,5 golos')?.p,o25s=M?1-sumM(M,(i,j)=>i+j<=2):null;
+  const bttsS=M?sumM(M,(i,j)=>i>0&&j>0):null;
+  const goals=md&&o25m!=null?(md.lh+md.la+lambdaFromOver(o25m))/2:md?md.lh+md.la:o25m!=null?lambdaFromOver(o25m):null;
+  const scores=M?[...Array(6)].flatMap((_,i)=>[...Array(6)].map((_,j)=>({i,j,p:M[i][j]}))).sort((a,b)=>b.p-a.p).slice(0,3):[];
+  const say=[];
+  if(pr.h!=null){const top=[[f.home,pr.h],[f.away,pr.a]].sort((a,b)=>b[1]-a[1])[0];
+    say.push(top[1]>=.45?`<b>Favorito: ${esc(top[0])}</b> (${pct(top[1])} de hipótese de vencer). Empate: ${pct(pr.d)}.`:`<b>Jogo equilibrado.</b> ${esc(f.home)} ${pct(pr.h)}, empate ${pct(pr.d)}, ${esc(f.away)} ${pct(pr.a)}.`)}
+  if(goals!=null)say.push(`<b>Esperam-se cerca de ${goals.toLocaleString('pt-PT',{maximumFractionDigits:1})} golos.</b> ${goals>=3?'Jogo com tendência para golos.':goals<=2.2?'Jogo com tendência para poucos golos.':'Número de golos dentro do habitual.'}`);
+  const o25=blend(o25m,o25s);if(o25!=null)say.push(`Mais de 2,5 golos: ${pct(o25)}.`);
+  if(bttsS!=null)say.push(`As duas equipas marcam: ${pct(bttsS)}.`);
+  if(scores.length)say.push(`Resultados mais prováveis: ${scores.map(x=>`${x.i}-${x.j}`).join(', ')}.`);
+  const disagree=has&&ms&&Math.max(Math.abs(mk.h-ms.h),Math.abs(mk.a-ms.a))>=.12;
+  const H=md&&!f.demo?findTeam(f.home,f.lg.id):null,A=md&&!f.demo?findTeam(f.away,f.lg.id):null,d=S.stats[f.lg.id]?.data;
+  const per=(x,n)=>n?(x/n).toLocaleString('pt-PT',{minimumFractionDigits:1,maximumFractionDigits:1}):'–';
+  const row=(lbl,a,b)=>`<tr><th>${lbl}</th><td>${a!=null?pct(a):'–'}</td><td>${b!=null?pct(b):'–'}</td></tr>`;
+  const mkts=['ft','ou','hcp'].filter(m=>isDemo()||apiSupports(m)).map(mid=>{
+    let list=sel(mid);if(mid!=='ft')list=list.filter(x=>chance(x)>=.2&&chance(x)<=.85).sort((a,b)=>chance(b)-chance(a)).slice(0,6);
+    if(!list.length)return'';
+    return`<p class="cat">${MK[mid].n}</p>${list.map(x=>{const c=chance(x),lv=c!=null?level(c):null,pinned=S.pins.get(String(f.id))?.pick===x.pick;
+      return`<div class="mrow"><span class="mp"><b>${esc(x.pick)}</b><span>${lv?`<span class="lvl ${lv[2]}">${lv[1]}</span>`:''}${goodOdd(x)?'<span class="lvl good">Boa odd</span>':''}${x.book?`<span class="bk">${esc(x.book)}</span>`:''}</span></span>
+      <span class="mo">${fmt(x.odd)}</span><button class="btn ${pinned?'on':''}" data-pin="${esc(String(f.id))}" data-mid="${mid}" data-pick="${esc(x.pick)}" aria-pressed="${pinned}">${I.pin}${pinned?'Fixada':'Fixar'}</button></div>`}).join('')}`}).join('');
+  return`<div class="st-head"><span>${esc(f.home)}</span><em>vs</em><span>${esc(f.away)}</span></div>
+  ${S.studyErr?`<div class="alert" style="margin:0 0 12px">Não consegui carregar tudo: ${esc(S.studyErr)}</div>`:''}
+  <div class="st-sec"><h3>O que é expectável</h3>${say.length?`<ul class="say">${say.map(x=>`<li>${x}</li>`).join('')}</ul>`:'<p class="hint">Ainda não há odds nem estatísticas para este jogo.</p>'}
+    ${disagree?'<p class="warnbox">As casas de apostas e as estatísticas discordam sobre o vencedor. Pode haver algo que os números não sabem: lesões, castigos ou poupanças.</p>':''}
+    ${!md?'<p class="hint" style="margin:8px 0 0">Sem estatísticas para este jogo; o estudo usa só as casas de apostas.</p>':''}</div>
+  ${has||ms?`<div class="st-sec"><h3>Casas vs estatísticas</h3><table class="cmp"><thead><tr><th></th><th>Casas</th><th>Estatísticas</th></tr></thead><tbody>
+    ${row(`${esc(f.home)} vence`,mk.h,ms?.h)}${row('Empate',mk.d,ms?.d)}${row(`${esc(f.away)} vence`,mk.a,ms?.a)}${row('Mais de 2,5 golos',o25m,o25s)}${row('As duas marcam',null,bttsS)}</tbody></table></div>`:''}
+  ${md?`<div class="st-sec"><h3>As equipas</h3><div class="teams">
+    <div><b>${esc(f.home)}</b>${frm(md.fh)}${H&&d?`<span>Em casa: marca ${per(H.attH*d.avgHome,1)}, sofre ${per(H.defH*d.avgAway,1)} por jogo</span><span>Época: ${H.gf} golos marcados, ${H.ga} sofridos em ${H.played} jogos</span>`:''}</div>
+    <div><b>${esc(f.away)}</b>${frm(md.fa)}${A&&d?`<span>Fora: marca ${per(A.attA*d.avgAway,1)}, sofre ${per(A.defA*d.avgHome,1)} por jogo</span><span>Época: ${A.gf} golos marcados, ${A.ga} sofridos em ${A.played} jogos</span>`:''}</div></div>
+    <p class="hint" style="margin:8px 0 0">Forma: V vitória, E empate, D derrota, do jogo mais recente para o mais antigo.</p></div>`:''}
+  ${mkts?`<div class="st-sec"><h3>Apostas possíveis</h3><p class="hint" style="margin:0 0 6px">Fixa uma seleção para ela entrar na próxima multi que gerares.</p>${mkts}</div>`:''}`;
+}
 function closeSheet(){const el=document.getElementById('sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';draft=null}
 
 /* ---------- eventos ---------- */
-function setDay(k){S.day=k;S.results=[];S.err='';render();ensureDay(k)}
+function setDay(k){S.day=k;S.results=[];S.err='';S.pins.clear();render();ensureDay(k)}
+// Volta a desenhar sem mexer na posição (usado quando chegam estatísticas em segundo plano).
+function renderSoft(){render()}
 async function loadQuota(){S.quotaErr='';try{S.quota=await api('/api/status')}catch(e){S.quotaErr=e.message}if(S.tab==='ajustes')render()}
 document.addEventListener('click',async e=>{
   if(e.target.matches('[data-scrim]')){closeSheet();render();return}
   const t=e.target.closest('button');if(!t)return;
   const d=t.dataset;
   if(d.tab){S.tab=d.tab;S.confirmDel=false;S.err='';render();window.scrollTo(0,0);if(d.tab==='ajustes'&&!isDemo())loadQuota();return}
+  if(d.study){const f=fixturesFor(S.day).find(x=>String(x.id)===d.study);if(!f)return;openSheet('game',d.study);loadStudy(f);return}
+  if(d.pin){const cur=S.pins.get(d.pin);if(cur&&cur.pick===d.pick)S.pins.delete(d.pin);else{S.pins.set(d.pin,{mid:d.mid,pick:d.pick});
+      const f=fixturesFor(S.day).find(x=>String(x.id)===d.pin);if(f){S.leagues.add(f.lg.id);if(!S.types.includes(d.mid)&&S.types.length<6)S.types.push(d.mid)}}
+    drawSheet();return}
+  if(d.unpin){S.pins.delete(d.unpin);render();return}
+  if(d.act==='toggleothers'){S.showOthers=!S.showOthers;if(S.showOthers&&!S.showAll){S.showAll=true;ensureDay(S.day,true)}render();return}
   if(d.detail){S.open??=new Set();S.open.has(d.detail)?S.open.delete(d.detail):S.open.add(d.detail);render();return}
   if(d.day){setDay(d.day);return}
   if('retryday' in d){ensureDay(S.day,true);return}
