@@ -1,13 +1,13 @@
 // GET /api/events?date=AAAA-MM-DD[&all=1]
 // Jogos por começar nesse dia. A lista de jogos é grátis na The Odds API (não gasta créditos).
-import { oa, handler, needDate, todayLisbon, dayRange, soccerLeagues, pool, CURATED, ApiError } from '../lib/oddsApi.js';
+import { oa, handler, needDate, todayLisbon, dayRange, soccerLeagues, pool, isCurated, ApiError } from '../lib/oddsApi.js';
 
 export default handler(async (q) => {
   const date = needDate(q);
   const all = q.get('all') === '1';
   const { from, to, empty } = dayRange(date);
   const leagues = await soccerLeagues();
-  const chosen = all ? leagues : leagues.filter((l) => CURATED.includes(l.key));
+  const chosen = all ? leagues : leagues.filter(isCurated);
 
   const fixtures = [];
   if (!empty) {

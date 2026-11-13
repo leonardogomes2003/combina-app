@@ -330,6 +330,9 @@ const CURATED=[
  ['soccer_spl','Escócia','SCO','Premiership'],['soccer_brazil_campeonato','Brasil','BRA','Brasileirão']
 ];
 const CUR=new Map(CURATED.map(([id,c,cc,n],i)=>[id,{c,cc,n,order:i}]));
+// Seleções nacionais: entram em destaque logo a seguir à Primeira Liga, com nome em português quando o conhecemos.
+const NATIONAL=/nations|international|friendl|qualif|euro_|world_cup/i;
+const NAT_NAMES=[[/nations/i,'Liga das Nações'],[/friendl/i,'Particulares'],[/world_cup.*qualif|qualif.*world/i,'Apuramento Mundial'],[/euro.*qualif|qualif.*euro/i,'Apuramento Europeu']];
 // Mercados que a The Odds API dá no plano grátis (pedido por liga).
 const API_MARKETS=['ft','ou','hcp'];
 const apiSupports=mid=>API_MARKETS.includes(mid);
@@ -564,7 +567,9 @@ function leaguesFor(date){
   if(isDemo())return DEMO_LEAGUES.map(l=>({...l,count:demoFixtures(date,l).length,curated:true}));
   const fx=S.dayData[date]?.fixtures||[];const map=new Map();
   for(const f of fx){const id=String(f.league.id);let l=map.get(id);
-    if(!l){const c=CUR.get(id);l={id,n:c?.n||f.league.name,c:c?.c||f.league.country,cc:c?.cc||(f.league.country||'').slice(0,3).toUpperCase(),curated:!!c,order:c?.order??999,count:0};map.set(id,l)}
+    if(!l){const c=CUR.get(id),nat=!c&&NATIONAL.test(id+' '+f.league.name);
+      l=nat?{id,n:NAT_NAMES.find(([r])=>r.test(id+' '+f.league.name))?.[1]||f.league.name,c:'Seleções',cc:'INT',curated:true,order:.5,count:0}
+        :{id,n:c?.n||f.league.name,c:c?.c||f.league.country,cc:c?.cc||(f.league.country||'').slice(0,3).toUpperCase(),curated:!!c,order:c?.order??999,count:0};map.set(id,l)}
     l.count++}
   return[...map.values()].sort((a,b)=>a.order-b.order||a.c.localeCompare(b.c)||a.n.localeCompare(b.n));
 }
@@ -808,13 +813,13 @@ function studyFav(f){
   return pr[top[0]]<.45?{t:'Equilibrado',p:null}:{t:top[1],p:pr[top[0]]};
 }
 function vJogos(){
-  const all=leaguesFor(S.day),ls=all.filter(l=>studyLeague(l)||S.showOthers);
+  const all=leaguesFor(S.day),ls=all.filter(l=>studyLeague(l)||l.curated||S.showOthers);
   const fx=fixturesFor(S.day);const names=isDemo()?DEMO_LEAGUES.map(l=>l.n):[...STATS_LEAGUES].sort((a,b)=>(CUR.get(a)?.order??99)-(CUR.get(b)?.order??99)).map(id=>CUR.get(id)?.n||'Championship');
   const loaded=isDemo()||S.dayData[S.day]?.status==='ok';
   const need=loaded&&!isDemo()&&!S.statsOff?ls.filter(l=>studyLeague(l)&&!S.stats[l.id]).map(l=>l.id):[];
   if(need.length)ensureStats(need).then(()=>{if(S.tab==='jogos'&&document.getElementById('sheet').hidden)renderSoft()});
   return `${S.notice?`<div class="notice">${esc(S.notice)}</div>`:''}<h1>Estudo <em>de mercado</em></h1>
-  <p class="lead">Para as ligas ${esc(names.slice(0,-1).join(', '))} e ${esc(names.at(-1))}. Toca num jogo para veres o estudo.</p>
+  <p class="lead">Estudo completo para as ligas ${esc(names.slice(0,-1).join(', '))} e ${esc(names.at(-1))}. Nas outras competições, como a Liga das Nações, o estudo usa só as casas de apostas. Toca num jogo para o veres.</p>
   ${dayStrip()}${dayProblem()}
   ${S.err&&S.tab==='jogos'?`<div class="alert" role="alert" style="margin:0 0 14px">${esc(S.err)}</div>`:''}
   ${ls.length?ls.map(l=>`<div class="lg"><div class="lg-h"><span class="cc">${esc(l.cc)}</span><b>${esc(l.n)}</b>${studyLeague(l)?'':'<span class="opt">só casas de apostas</span>'}</div>
@@ -822,7 +827,7 @@ function vJogos(){
     <span class="tm"><span>${esc(f.home)}${frm(md?.fh)}</span><span>${esc(f.away)}${frm(md?.fa)}</span></span>
     <span class="fav">${fav?(fav.p!=null?`<small>Favorito</small><b>${esc(fav.t)}</b><em>${pct(fav.p)}</em>`:`<b>Equilibrado</b>`):'<small>Ver estudo</small>'}${I.chev}</span>${S.pins.has(String(f.id))?`<span class="pinned">${I.pin}Fixada: ${esc(S.pins.get(String(f.id)).pick)}</span>`:''}</button>`}).join('')}</div>`).join('')
   :(loaded?`<div class="empty"><strong>Sem jogos</strong>${esc(dayLong(S.day).replace(/^./,c=>c.toUpperCase()))} não há jogos por começar nestas ligas. Escolhe outro dia no calendário.</div>`:'')}
-  ${!isDemo()&&loaded&&all.some(l=>!studyLeague(l))?`<button class="more" data-act="toggleothers">${S.showOthers?'Esconder as outras ligas':`Ver também outras ligas (${all.filter(l=>!studyLeague(l)).reduce((a,l)=>a+l.count,0)} jogos, só com casas de apostas)`}</button>`:''}`;
+  ${!isDemo()&&loaded?`<button class="more" data-act="toggleothers">${S.showOthers?'Mostrar só as ligas em destaque':'Ver todas as ligas'}</button>`:''}`;
 }
 function vMultis(){
   return `<h1>Multis <em>guardadas</em></h1>`+(S.saved.length?`<div class="tks">${S.saved.map((m,i)=>ticket(m,i,true)).join('')}</div>`

@@ -143,6 +143,15 @@ assert.equal(r.json.code, 'missing_key');
 
 mock.close();
 
+// competições de seleções entram em destaque mesmo sem estarem na lista fixa
+{
+  const { isCurated } = await import('../lib/oddsApi.js');
+  assert.ok(isCurated({ key: 'soccer_uefa_nations_league', title: 'UEFA Nations League' }));
+  assert.ok(isCurated({ key: 'soccer_international_friendlies', title: 'International Friendlies' }));
+  assert.ok(isCurated({ key: 'soccer_epl', title: 'EPL' }));
+  assert.ok(!isCurated({ key: 'soccer_ukraine_premier_league', title: 'Premier League - Ukraine' }));
+}
+
 // ---------- estatísticas (football-data.org falsa) ----------
 {
   const { ratings } = await import('../lib/ratings.js');
